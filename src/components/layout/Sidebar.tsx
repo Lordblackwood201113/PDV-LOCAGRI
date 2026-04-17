@@ -11,13 +11,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Vault,
+  Users,
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 
-export type Page = 'dashboard' | 'sales' | 'stock' | 'reports' | 'admin' | 'safe'
+export type Page = 'dashboard' | 'sales' | 'stock' | 'reports' | 'admin' | 'safe' | 'clients'
 
 interface SidebarProps {
   currentPage: Page
@@ -76,9 +77,12 @@ export function Sidebar({
   const safePendingCount = (pendingFundRequests?.length ?? 0) + (pendingDeposits?.length ?? 0)
 
   const canAccessStock = userRole === 'admin' || userRole === 'manager'
-  const canAccessReports = userRole === 'admin' || userRole === 'manager'
+  // Rapports : tous les rôles actifs (le contenu s'adapte, cashier = ses ventes)
+  const canAccessReports = userRole === 'admin' || userRole === 'manager' || userRole === 'cashier'
   const canAccessAdmin = userRole === 'admin'
   const canAccessSafe = userRole === 'admin' || userRole === 'manager'
+  // Répertoire clients : accessible à tous (cashier en lecture, manager+ en édition)
+  const canAccessClients = userRole === 'admin' || userRole === 'manager' || userRole === 'cashier'
 
   const navItems = [
     {
@@ -92,6 +96,12 @@ export function Sidebar({
       label: 'Caisse',
       icon: ShoppingCart,
       visible: true,
+    },
+    {
+      id: 'clients' as Page,
+      label: 'Clients',
+      icon: Users,
+      visible: canAccessClients,
     },
     {
       id: 'stock' as Page,

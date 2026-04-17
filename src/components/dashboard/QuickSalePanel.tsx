@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { Minus, Plus, Banknote, Smartphone, ShoppingBag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { ClientSelector } from '@/components/clients'
 
 type PaymentMethod = 'cash' | 'mobile_money'
 
@@ -14,6 +15,8 @@ export function QuickSalePanel() {
   const [quantity, setQuantity] = useState(1)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedClientId, setSelectedClientId] = useState<Id<'clients'> | null>(null)
+  const [selectedClientName, setSelectedClientName] = useState<string | null>(null)
 
   const products = useQuery(api.products.getProducts)
   const createSale = useMutation(api.sales.createSale)
@@ -47,16 +50,19 @@ export function QuickSalePanel() {
         productId: selectedProductId,
         quantity,
         paymentMethod,
+        clientId: selectedClientId ?? undefined,
       })
+
+      const clientSuffix = selectedClientName ? ` · ${selectedClientName}` : ''
 
       // Message différent si la vente a été ajoutée au coffre (admin)
       if (result.addedToSafe) {
         toast.success('Vente enregistrée + Coffre', {
-          description: `${formatPrice(result.total)} FCFA ajoutés directement au coffre`,
+          description: `${formatPrice(result.total)} FCFA ajoutés directement au coffre${clientSuffix}`,
         })
       } else {
         toast.success('Vente enregistrée', {
-          description: `${quantity} x ${result.productName} = ${formatPrice(result.total)} FCFA`,
+          description: `${quantity} x ${result.productName} = ${formatPrice(result.total)} FCFA${clientSuffix}`,
         })
       }
 
@@ -67,6 +73,8 @@ export function QuickSalePanel() {
       }
 
       setQuantity(1)
+      setSelectedClientId(null)
+      setSelectedClientName(null)
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erreur inconnue'
       toast.error('Erreur', { description: message })
@@ -191,6 +199,22 @@ export function QuickSalePanel() {
               </Button>
             ))}
           </div>
+        </div>
+
+        {/* Client (optionnel) */}
+        <div className="space-y-2">
+          <label className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide">
+            Client
+          </label>
+          <ClientSelector
+            selectedClientId={selectedClientId}
+            selectedClientName={selectedClientName}
+            onSelect={(clientId, clientName) => {
+              setSelectedClientId(clientId)
+              setSelectedClientName(clientName)
+            }}
+            disabled={isSubmitting}
+          />
         </div>
 
         {/* Paiement */}

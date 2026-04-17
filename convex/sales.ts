@@ -217,6 +217,7 @@ export const getSalesHistory = query({
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
     productId: v.optional(v.id("products")),
+    clientId: v.optional(v.id("clients")),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -230,7 +231,7 @@ export const getSalesHistory = query({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .unique();
 
-    if (!user || user.role === "cashier") {
+    if (!user) {
       return [];
     }
 
@@ -239,6 +240,11 @@ export const getSalesHistory = query({
       .withIndex("by_date")
       .order("desc")
       .collect();
+
+    // Les caissiers ne voient que leurs propres ventes
+    if (user.role === "cashier") {
+      sales = sales.filter((s) => s.userId === identity.subject);
+    }
 
     // Filtrer par dates si spécifiées
     if (args.startDate) {
@@ -251,6 +257,11 @@ export const getSalesHistory = query({
     // Filtrer par produit si spécifié
     if (args.productId) {
       sales = sales.filter((s) => s.productId === args.productId);
+    }
+
+    // Filtrer par client si spécifié
+    if (args.clientId) {
+      sales = sales.filter((s) => s.clientId === args.clientId);
     }
 
     // Limiter le nombre de résultats

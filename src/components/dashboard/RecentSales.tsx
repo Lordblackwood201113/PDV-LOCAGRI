@@ -57,7 +57,7 @@ export function RecentSales() {
                         x{sale.quantity}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 flex-wrap">
                       <span className="text-[10px] sm:text-xs text-gray-400">
                         {formatTime(sale.date)}
                       </span>
@@ -65,6 +65,14 @@ export function RecentSales() {
                       <span className="text-[10px] sm:text-xs text-gray-400 truncate hidden sm:block">
                         {sale.userName}
                       </span>
+                      {sale.clientName && (
+                        <>
+                          <span className="text-gray-300">·</span>
+                          <span className="text-[10px] sm:text-xs text-[#016124] font-medium truncate">
+                            {sale.clientName}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
 

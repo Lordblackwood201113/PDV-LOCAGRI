@@ -28,6 +28,7 @@ export function DashboardLayout({
   const defaultTitles: Record<Page, { title: string; description: string }> = {
     dashboard: { title: 'Tableau de bord', description: 'Vue d\'ensemble de votre activité' },
     sales: { title: 'Caisse', description: 'Enregistrez vos ventes' },
+    clients: { title: 'Clients', description: 'Répertoire et gestion des clients' },
     stock: { title: 'Gestion du Stock', description: 'Suivez et gérez votre inventaire' },
     reports: { title: 'Rapports', description: 'Analysez vos performances' },
     safe: { title: 'Gestion du Coffre', description: 'Gérez les fonds et versements' },

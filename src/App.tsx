@@ -5,7 +5,7 @@ import { api } from '../convex/_generated/api'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
 import { DashboardLayout, type Page } from '@/components/layout'
-import { DashboardPage, SalesPage, StockPage, ReportsPage, AdminPage, SafePage } from '@/pages'
+import { DashboardPage, SalesPage, StockPage, ReportsPage, AdminPage, SafePage, ClientsPage } from '@/pages'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Clock, UserCheck } from 'lucide-react'
@@ -270,8 +270,9 @@ function AuthenticatedApp() {
     )
   }
 
-  // Pour les caissiers, limiter les pages accessibles (dashboard et caisse uniquement)
-  const allowedPagesForCashier: Page[] = ['dashboard', 'sales']
+  // Pour les caissiers, limiter les pages accessibles
+  // (dashboard, caisse, clients, rapports — historique ventes filtré à ses ventes)
+  const allowedPagesForCashier: Page[] = ['dashboard', 'sales', 'clients', 'reports']
   const effectivePage = currentUserData.role === 'cashier' && !allowedPagesForCashier.includes(currentPage)
     ? 'dashboard'
     : currentPage
@@ -282,6 +283,8 @@ function AuthenticatedApp() {
         return <DashboardPage />
       case 'sales':
         return <SalesPage />
+      case 'clients':
+        return <ClientsPage />
       case 'stock':
         return <StockPage />
       case 'reports':

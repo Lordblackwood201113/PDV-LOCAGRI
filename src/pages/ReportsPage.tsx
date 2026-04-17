@@ -1,16 +1,44 @@
+import { useMemo, useState } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
+import type { Id } from '../../convex/_generated/dataModel'
 import { TodayStats } from '@/components/sales'
 import { ExportReportsModal } from '@/components/reports'
+import { ClientSelector } from '@/components/clients'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Banknote, Smartphone, Wallet, Receipt } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Banknote, Smartphone, Wallet, Receipt, Calendar } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+type DateRange = 'today' | '7days' | '30days'
 
 export function ReportsPage() {
-  const todaySales = useQuery(api.sales.getTodaySales, {})
+  const [dateRange, setDateRange] = useState<DateRange>('today')
+  const [clientFilter, setClientFilter] = useState<{
+    id: Id<'clients'> | null
+    name: string | null
+  }>({ id: null, name: null })
+
   const currentUser = useQuery(api.users.getCurrentUser)
   const todayExpenses = useQuery(api.expenses.getTodayWithdrawnExpenses)
   const expensesHistory = useQuery(api.expenses.getExpensesHistory, { status: 'withdrawn', limit: 10 })
+
+  // Calculer le startDate en fonction de la plage
+  const startOfRange = useMemo(() => {
+    const start = new Date()
+    start.setHours(0, 0, 0, 0)
+    if (dateRange === '7days') start.setDate(start.getDate() - 6)
+    if (dateRange === '30days') start.setDate(start.getDate() - 29)
+    return start.getTime()
+  }, [dateRange])
+
+  // Historique des ventes avec filtres (startDate + clientId)
+  // Le backend filtre déjà au cashier ses propres ventes
+  const sales = useQuery(api.sales.getSalesHistory, {
+    startDate: startOfRange,
+    clientId: clientFilter.id ?? undefined,
+  })
 
   // Formatage
   const formatPrice = (amount: number) => {
@@ -19,6 +47,15 @@ export function ReportsPage() {
 
   const formatTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  const formatDateTime = (timestamp: number) => {
+    return new Date(timestamp).toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: 'short',
       hour: '2-digit',
       minute: '2-digit',
     })
@@ -33,31 +70,33 @@ export function ReportsPage() {
     )
   }
 
-  if (currentUser?.role === 'cashier') {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh] p-4">
-        <div className="text-center">
-          <p className="text-muted-foreground text-sm">
-            Vous n'avez pas accès à cette section.
-          </p>
-        </div>
-      </div>
-    )
+  const isCashier = currentUser?.role === 'cashier'
+  const canSeeExpenses = !isCashier
+  const canExport = !isCashier
+
+  const rangeLabels: Record<DateRange, string> = {
+    today: "Aujourd'hui",
+    '7days': '7 derniers jours',
+    '30days': '30 derniers jours',
   }
+
+  const totalAmount = sales?.reduce((sum, s) => sum + s.total, 0) ?? 0
 
   return (
     <div className="h-full overflow-auto p-3 sm:p-4">
       <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Rapports & Statistiques</h2>
-          <ExportReportsModal />
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+            {isCashier ? 'Mon historique' : 'Rapports & Statistiques'}
+          </h2>
+          {canExport && <ExportReportsModal />}
         </div>
 
-        {/* Statistiques du jour - version étendue */}
+        {/* Statistiques du jour — tous les rôles (le backend filtre le caissier à ses ventes) */}
         <TodayStats expanded />
 
-        {/* Résumé des dépenses du jour */}
-        {todayExpenses && todayExpenses.total > 0 && (
+        {/* Résumé des dépenses du jour — admin/manager uniquement */}
+        {canSeeExpenses && todayExpenses && todayExpenses.total > 0 && (
           <Card className="border-[#CF761C]/30 bg-[#CF761C]/5">
             <CardContent className="p-4 sm:pt-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -78,23 +117,63 @@ export function ReportsPage() {
           </Card>
         )}
 
-        {/* Historique des ventes du jour - Card View on Mobile */}
+        {/* Historique des ventes avec filtres */}
         <Card>
           <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-sm sm:text-base">Détail des ventes du jour</CardTitle>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <CardTitle className="text-sm sm:text-base">
+                {isCashier ? 'Mes ventes' : 'Historique des ventes'} · {rangeLabels[dateRange]}
+              </CardTitle>
+              <span className="text-xs sm:text-sm text-muted-foreground">
+                {sales?.length ?? 0} vente{(sales?.length ?? 0) > 1 ? 's' : ''} · {formatPrice(totalAmount)} F
+              </span>
+            </div>
+
+            {/* Filtres */}
+            <div className="flex flex-col sm:flex-row gap-3 mt-3">
+              {/* Range selector */}
+              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+                {(Object.keys(rangeLabels) as DateRange[]).map((r) => (
+                  <Button
+                    key={r}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDateRange(r)}
+                    className={cn(
+                      'text-xs h-7 px-3',
+                      dateRange === r && 'bg-white shadow-sm text-[#016124] hover:bg-white'
+                    )}
+                  >
+                    <Calendar className="w-3 h-3 mr-1.5" />
+                    {rangeLabels[r]}
+                  </Button>
+                ))}
+              </div>
+
+              {/* Client filter */}
+              <div className="flex-1 min-w-0">
+                <ClientSelector
+                  selectedClientId={clientFilter.id}
+                  selectedClientName={clientFilter.name}
+                  onSelect={(id, name) => setClientFilter({ id, name })}
+                />
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-            {todaySales === undefined ? (
+            {sales === undefined ? (
               <div className="flex justify-center py-8">
                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
-            ) : todaySales.length === 0 ? (
+            ) : sales.length === 0 ? (
               <p className="text-center text-muted-foreground py-8 text-sm">
-                Aucune vente aujourd'hui
+                {clientFilter.id
+                  ? `Aucune vente pour ce client sur ${rangeLabels[dateRange].toLowerCase()}`
+                  : `Aucune vente sur ${rangeLabels[dateRange].toLowerCase()}`}
               </p>
             ) : (
               <div className="space-y-3">
-                {todaySales.map((sale) => (
+                {sales.map((sale) => (
                   <div
                     key={sale._id}
                     className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-gray-50 rounded-lg"
@@ -110,7 +189,7 @@ export function ReportsPage() {
                         )}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium text-sm text-primary truncate">
                             {sale.productName} <span className="text-gray-500 font-normal">x{sale.quantity}</span>
                           </p>
@@ -120,14 +199,18 @@ export function ReportsPage() {
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500">
-                          <span>{formatTime(sale.date)}</span>
+                        <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500 flex-wrap">
+                          <span>
+                            {dateRange === 'today' ? formatTime(sale.date) : formatDateTime(sale.date)}
+                          </span>
                           <span className="text-gray-300">·</span>
                           <span className="truncate">{sale.userName}</span>
                           {sale.clientName && (
                             <>
                               <span className="text-gray-300">·</span>
-                              <span className="truncate text-[#016124]">{sale.clientName}</span>
+                              <span className="truncate text-[#016124] font-medium">
+                                {sale.clientName}
+                              </span>
                             </>
                           )}
                         </div>
@@ -148,8 +231,8 @@ export function ReportsPage() {
           </CardContent>
         </Card>
 
-        {/* Historique des dépenses récentes */}
-        {expensesHistory && expensesHistory.length > 0 && (
+        {/* Historique des dépenses récentes — admin/manager uniquement */}
+        {canSeeExpenses && expensesHistory && expensesHistory.length > 0 && (
           <Card>
             <CardHeader className="p-4 sm:p-6">
               <CardTitle className="text-sm sm:text-base flex items-center gap-2">
