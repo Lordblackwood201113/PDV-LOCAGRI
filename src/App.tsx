@@ -167,7 +167,6 @@ function AuthenticatedApp() {
   // Mutations et queries Convex
   const getOrCreateUser = useMutation(api.users.getOrCreateUser)
   const currentUserData = useQuery(api.users.getCurrentUser)
-  const product = useQuery(api.products.getProduct)
 
   // Initialiser/récupérer l'utilisateur Convex à la connexion
   useEffect(() => {
@@ -264,31 +263,6 @@ function AuthenticatedApp() {
             </p>
             <SignOutButton>
               <Button variant="outline" className="mt-3 sm:mt-4 text-sm">Se déconnecter</Button>
-            </SignOutButton>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  // Vérifier si le produit est configuré (sauf pour admin qui peut le configurer)
-  const needsProductSetup = !product && currentUserData.role !== 'admin'
-
-  if (needsProductSetup) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-3 sm:p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-center text-lg sm:text-xl">Configuration requise</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center p-4 sm:p-6 pt-0 sm:pt-0">
-            <p className="text-muted-foreground mb-4 text-xs sm:text-sm">
-              Le produit n'a pas encore été configuré.
-              <br />
-              Veuillez contacter un administrateur.
-            </p>
-            <SignOutButton>
-              <Button variant="outline" className="text-sm">Se déconnecter</Button>
             </SignOutButton>
           </CardContent>
         </Card>

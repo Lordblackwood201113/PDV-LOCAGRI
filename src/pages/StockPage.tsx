@@ -8,10 +8,10 @@ import { PackageX } from 'lucide-react'
 export function StockPage() {
   const [activeTab, setActiveTab] = useState('overview')
   const currentUser = useQuery(api.users.getCurrentUser)
-  const product = useQuery(api.products.getProduct)
+  const products = useQuery(api.products.getProducts)
 
   // Chargement
-  if (currentUser === undefined || product === undefined) {
+  if (currentUser === undefined || products === undefined) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center">
@@ -22,17 +22,17 @@ export function StockPage() {
     )
   }
 
-  // Produit non configuré
-  if (!product) {
+  // Aucun produit configuré
+  if (!products || products.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[50vh] p-4">
         <div className="text-center max-w-md">
           <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <PackageX className="w-8 h-8 text-slate-500" />
           </div>
-          <h2 className="text-xl font-semibold mb-2">Produit non configuré</h2>
+          <h2 className="text-xl font-semibold mb-2">Aucun produit configuré</h2>
           <p className="text-muted-foreground">
-            Le produit doit d'abord être configuré dans la section Ventes.
+            Les produits doivent d'abord être configurés dans la section Ventes.
           </p>
         </div>
       </div>
