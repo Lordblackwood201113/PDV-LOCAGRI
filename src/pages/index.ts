@@ -1,0 +1,6 @@
+export { DashboardPage } from './DashboardPage'
+export { SalesPage } from './SalesPage'
+export { StockPage } from './StockPage'
+export { ReportsPage } from './ReportsPage'
+export { AdminPage } from './AdminPage'
+export { SafePage } from './SafePage'

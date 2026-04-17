@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__sequential-thinking__sequentialthinking",
+      "mcp__serena__write_memory",
+      "Bash(move * \"C:\\\\Users\\\\ADMIN\\\\Desktop\\\\PDV-LOCAGRI\"\")",
+      "Bash(node node_modules/tailwindcss/lib/cli.js:*)",
+      "Bash(npx:*)",
+      "mcp__chrome-devtools__list_console_messages",
+      "Bash(copy \"C:\\\\Users\\\\ADMIN\\\\Desktop\\\\PDV-LOCAGRI\\\\logo-locari.png\" \"C:\\\\Users\\\\ADMIN\\\\Desktop\\\\PDV-LOCAGRI\\\\public\\\\logo-locagri.png\")",
+      "Bash(timeout 15 npm run dev:*)"
+    ]
+  }
+}

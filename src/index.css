@@ -1,0 +1,159 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "react-day-picker/style.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* PDV Locagri - Palette de couleurs
+ * Primary (Vert foncé):  #016124
+ * Accent (Orange):       #CF761C
+ * Success (Vert clair):  #7ABE4E
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Palette Locagri */
+  --color-locagri-primary: #016124;
+  --color-locagri-primary-light: #017a2e;
+  --color-locagri-primary-dark: #014d1c;
+  --color-locagri-accent: #CF761C;
+  --color-locagri-accent-light: #e08a2f;
+  --color-locagri-accent-dark: #b56516;
+  --color-locagri-success: #7ABE4E;
+  --color-locagri-success-light: #8ec965;
+  --color-locagri-success-dark: #68a83f;
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* Couleurs de base - Dominance blanc professionnel */
+  --background: #FFFFFF;
+  --foreground: #1F2937;
+  --card: #FFFFFF;
+  --card-foreground: #1F2937;
+  --popover: #FFFFFF;
+  --popover-foreground: #1F2937;
+
+  /* Couleur primaire - Vert foncé Locagri */
+  --primary: #016124;
+  --primary-foreground: #FFFFFF;
+
+  /* Couleur secondaire - Plus subtile */
+  --secondary: #F8FAFC;
+  --secondary-foreground: #1F2937;
+
+  /* Muted - Très léger pour un look clean */
+  --muted: #F8FAFC;
+  --muted-foreground: #64748B;
+
+  /* Accent - Orange Locagri */
+  --accent: #CF761C;
+  --accent-foreground: #FFFFFF;
+
+  /* Destructive */
+  --destructive: #DC2626;
+
+  /* Borders & inputs - Plus légers */
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #016124;
+
+  /* Charts - Palette Locagri */
+  --chart-1: #016124;
+  --chart-2: #7ABE4E;
+  --chart-3: #CF761C;
+  --chart-4: #DC2626;
+  --chart-5: #6B7280;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html, body {
+    @apply h-full overflow-hidden;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  #root {
+    @apply h-full overflow-hidden;
+  }
+}
+
+/* Custom utility classes for PDV Locagri */
+@layer components {
+  /* Touch-friendly button for tablet (min 48px touch target) */
+  .btn-touch {
+    @apply min-h-[48px] min-w-[48px] text-lg;
+  }
+
+  /* Large touch button for POS actions */
+  .btn-pos {
+    @apply h-14 text-lg font-medium rounded-lg transition-colors;
+  }
+
+  /* Stock alert styling */
+  .stock-low {
+    @apply border-[#CF761C] bg-orange-50;
+  }
+
+  .stock-critical {
+    @apply border-red-500 bg-red-50;
+  }
+}
+
+/* Tailwind custom colors extension */
+@layer utilities {
+  /* Primary green */
+  .bg-locagri-primary { background-color: #016124; }
+  .bg-locagri-primary-light { background-color: #017a2e; }
+  .bg-locagri-primary-dark { background-color: #014d1c; }
+  .text-locagri-primary { color: #016124; }
+  .text-locagri-primary-light { color: #017a2e; }
+  .border-locagri-primary { border-color: #016124; }
+
+  /* Accent orange */
+  .bg-locagri-accent { background-color: #CF761C; }
+  .bg-locagri-accent-light { background-color: #e08a2f; }
+  .bg-locagri-accent-dark { background-color: #b56516; }
+  .text-locagri-accent { color: #CF761C; }
+  .border-locagri-accent { border-color: #CF761C; }
+
+  /* Success green */
+  .bg-locagri-success { background-color: #7ABE4E; }
+  .bg-locagri-success-light { background-color: #8ec965; }
+  .bg-locagri-success-dark { background-color: #68a83f; }
+  .text-locagri-success { color: #7ABE4E; }
+  .border-locagri-success { border-color: #7ABE4E; }
+}
