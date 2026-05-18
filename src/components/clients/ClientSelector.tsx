@@ -42,6 +42,7 @@ export function ClientSelector({
     firstName: '',
     lastName: '',
     phone: '',
+    quartier: '',
   })
   const [isCreating, setIsCreating] = useState(false)
 
@@ -72,6 +73,7 @@ export function ClientSelector({
     const hasFirstName = newClient.firstName.trim()
     const hasLastName = newClient.lastName.trim()
     const hasPhone = newClient.phone.trim()
+    const hasQuartier = newClient.quartier.trim()
 
     if (!hasFirstName && !hasLastName && !hasPhone) {
       toast.error('Veuillez renseigner au moins un champ')
@@ -84,6 +86,7 @@ export function ClientSelector({
         firstName: hasFirstName || undefined,
         lastName: hasLastName || undefined,
         phone: hasPhone || undefined,
+        quartier: hasQuartier || undefined,
       })
 
       toast.success('Client créé', {
@@ -93,7 +96,7 @@ export function ClientSelector({
       onSelect(result.clientId, result.displayName, result.reference)
       setCreateDialogOpen(false)
       setOpen(false)
-      setNewClient({ firstName: '', lastName: '', phone: '' })
+      setNewClient({ firstName: '', lastName: '', phone: '', quartier: '' })
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erreur inconnue'
       toast.error('Erreur', { description: message })
@@ -262,6 +265,16 @@ export function ClientSelector({
                 value={newClient.phone}
                 onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
                 placeholder="77 123 45 67"
+                disabled={isCreating}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quartier" className="text-sm">Quartier</Label>
+              <Input
+                id="quartier"
+                value={newClient.quartier}
+                onChange={(e) => setNewClient({ ...newClient, quartier: e.target.value })}
+                placeholder="Cocody, Yopougon, Plateau..."
                 disabled={isCreating}
               />
             </div>

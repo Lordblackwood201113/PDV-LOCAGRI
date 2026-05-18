@@ -71,12 +71,14 @@ export const searchClients = query({
       const lastName = (c.lastName || "").toLowerCase();
       const phone = (c.phone || "").toLowerCase();
       const reference = c.reference.toLowerCase();
+      const quartier = (c.quartier || "").toLowerCase();
 
       return (
         firstName.includes(searchQuery) ||
         lastName.includes(searchQuery) ||
         phone.includes(searchQuery) ||
         reference.includes(searchQuery) ||
+        quartier.includes(searchQuery) ||
         `${firstName} ${lastName}`.includes(searchQuery) ||
         `${lastName} ${firstName}`.includes(searchQuery)
       );
@@ -148,6 +150,7 @@ export const createClient = mutation({
     lastName: v.optional(v.string()),
     phone: v.optional(v.string()),
     email: v.optional(v.string()),
+    quartier: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   returns: v.object({
@@ -200,6 +203,7 @@ export const createClient = mutation({
       lastName: hasLastName || undefined,
       phone: hasPhone || undefined,
       email: args.email?.trim() || undefined,
+      quartier: args.quartier?.trim() || undefined,
       notes: args.notes?.trim() || undefined,
       createdAt: now,
       createdById: identity.subject,
@@ -229,6 +233,7 @@ export const updateClient = mutation({
     lastName: v.optional(v.string()),
     phone: v.optional(v.string()),
     email: v.optional(v.string()),
+    quartier: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -266,6 +271,7 @@ export const updateClient = mutation({
       lastName: args.lastName?.trim() || undefined,
       phone: hasPhone || undefined,
       email: args.email?.trim() || undefined,
+      quartier: args.quartier?.trim() || undefined,
       notes: args.notes?.trim() || undefined,
     });
 
