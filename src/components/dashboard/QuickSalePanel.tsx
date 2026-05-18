@@ -55,16 +55,9 @@ export function QuickSalePanel() {
 
       const clientSuffix = selectedClientName ? ` · ${selectedClientName}` : ''
 
-      // Message différent si la vente a été ajoutée au coffre (admin)
-      if (result.addedToSafe) {
-        toast.success('Vente enregistrée + Coffre', {
-          description: `${formatPrice(result.total)} FCFA ajoutés directement au coffre${clientSuffix}`,
-        })
-      } else {
-        toast.success('Vente enregistrée', {
-          description: `${quantity} x ${result.productName} = ${formatPrice(result.total)} FCFA${clientSuffix}`,
-        })
-      }
+      toast.success('Vente enregistrée', {
+        description: `${quantity} x ${result.productName} = ${formatPrice(result.total)} FCFA${clientSuffix}`,
+      })
 
       if (result.isLowStock) {
         toast.warning('Stock bas', {
