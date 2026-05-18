@@ -27,6 +27,7 @@ export default defineSchema({
     lastName: v.optional(v.string()),   // Nom (optionnel)
     phone: v.optional(v.string()),      // Contact téléphone (optionnel)
     email: v.optional(v.string()),      // Email (optionnel)
+    quartier: v.optional(v.string()),   // Quartier de résidence (optionnel)
     notes: v.optional(v.string()),      // Notes sur le client
     createdAt: v.number(),          // Date de création
     createdById: v.string(),        // ID de l'utilisateur qui a créé

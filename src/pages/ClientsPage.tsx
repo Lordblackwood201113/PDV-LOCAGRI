@@ -26,6 +26,7 @@ import {
   Loader2,
   Phone,
   Mail,
+  MapPin,
 } from 'lucide-react'
 
 type ClientDoc = {
@@ -35,6 +36,7 @@ type ClientDoc = {
   lastName?: string
   phone?: string
   email?: string
+  quartier?: string
   notes?: string
   isActive: boolean
   createdAt: number
@@ -65,12 +67,14 @@ export function ClientsPage() {
       const last = (c.lastName || '').toLowerCase()
       const phone = (c.phone || '').toLowerCase()
       const email = (c.email || '').toLowerCase()
+      const quartier = (c.quartier || '').toLowerCase()
       const ref = c.reference.toLowerCase()
       return (
         first.includes(q) ||
         last.includes(q) ||
         phone.includes(q) ||
         email.includes(q) ||
+        quartier.includes(q) ||
         ref.includes(q) ||
         `${first} ${last}`.includes(q)
       )
@@ -120,7 +124,7 @@ export function ClientsPage() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
-                  placeholder="Rechercher par nom, téléphone, référence..."
+                  placeholder="Rechercher par nom, téléphone, quartier, référence..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
@@ -252,6 +256,11 @@ function ClientRow({
                 <Mail className="w-3 h-3" /> {client.email}
               </span>
             )}
+            {client.quartier && (
+              <span className="inline-flex items-center gap-1 truncate">
+                <MapPin className="w-3 h-3" /> {client.quartier}
+              </span>
+            )}
           </div>
           <p className="text-[10px] text-muted-foreground mt-0.5">
             Créé par {client.createdByName} le {formatDate(client.createdAt)}
@@ -309,10 +318,10 @@ function CreateClientDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const createClient = useMutation(api.clients.createClient)
-  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', email: '', notes: '' })
+  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', email: '', quartier: '', notes: '' })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const reset = () => setForm({ firstName: '', lastName: '', phone: '', email: '', notes: '' })
+  const reset = () => setForm({ firstName: '', lastName: '', phone: '', email: '', quartier: '', notes: '' })
 
   const handleSubmit = async () => {
     const first = form.firstName.trim()
@@ -331,6 +340,7 @@ function CreateClientDialog({
         lastName: last || undefined,
         phone: phone || undefined,
         email: form.email.trim() || undefined,
+        quartier: form.quartier.trim() || undefined,
         notes: form.notes.trim() || undefined,
       })
       toast.success('Client créé', {
@@ -388,6 +398,16 @@ function CreateClientDialog({
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               placeholder="77 123 45 67"
+              disabled={isSubmitting}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="create-quartier">Quartier</Label>
+            <Input
+              id="create-quartier"
+              value={form.quartier}
+              onChange={(e) => setForm({ ...form, quartier: e.target.value })}
+              placeholder="Cocody, Yopougon, Plateau..."
               disabled={isSubmitting}
             />
           </div>
@@ -466,6 +486,7 @@ function EditClientDialog({
     lastName: client.lastName ?? '',
     phone: client.phone ?? '',
     email: client.email ?? '',
+    quartier: client.quartier ?? '',
     notes: client.notes ?? '',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -479,6 +500,7 @@ function EditClientDialog({
         lastName: form.lastName.trim() || undefined,
         phone: form.phone.trim() || undefined,
         email: form.email.trim() || undefined,
+        quartier: form.quartier.trim() || undefined,
         notes: form.notes.trim() || undefined,
       })
       toast.success('Client mis à jour')
@@ -528,6 +550,16 @@ function EditClientDialog({
               id="edit-phone"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              disabled={isSubmitting}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-quartier">Quartier</Label>
+            <Input
+              id="edit-quartier"
+              value={form.quartier}
+              onChange={(e) => setForm({ ...form, quartier: e.target.value })}
+              placeholder="Cocody, Yopougon, Plateau..."
               disabled={isSubmitting}
             />
           </div>
