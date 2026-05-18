@@ -410,37 +410,6 @@ export const createSale = mutation({
       saleReference,
     });
 
-    // Pour les admins : ajouter directement les ventes en espèces au coffre
-    let addedToSafe = false;
-    if (user.role === "admin" && args.paymentMethod === "cash") {
-      const safe = await ctx.db.query("safe").first();
-      if (safe) {
-        const newSafeBalance = safe.currentBalance + total;
-
-        // Mettre à jour le solde du coffre
-        await ctx.db.patch(safe._id, {
-          currentBalance: newSafeBalance,
-          lastUpdated: now,
-          updatedBy: identity.subject,
-          updatedByName: user.name,
-        });
-
-        // Enregistrer la transaction au coffre
-        await ctx.db.insert("safeTransactions", {
-          type: "deposit",
-          amount: total,
-          previousBalance: safe.currentBalance,
-          newBalance: newSafeBalance,
-          performedById: identity.subject,
-          performedByName: user.name,
-          reason: `Vente directe admin ${saleReference}: ${args.quantity} ${product.unit ?? 'sac'}(s) ${product.name}`,
-          date: now,
-        });
-
-        addedToSafe = true;
-      }
-    }
-
     return {
       saleId,
       saleReference,
@@ -449,7 +418,6 @@ export const createSale = mutation({
       isLowStock: newStock <= product.alertThreshold,
       productName: product.name,
       unit: productUnit,
-      addedToSafe,
       clientName,
     };
   },

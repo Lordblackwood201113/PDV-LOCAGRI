@@ -5,7 +5,7 @@ import { ProductSetup } from '@/components/sales'
 import { CashSessionProvider, useCashSession } from '@/components/cash'
 import { QuickSalePanel, RecentSales } from '@/components/dashboard'
 import { ExpenseRequestForm, MyExpensesList } from '@/components/expenses'
-import { Lock, Clock, Banknote, Smartphone, CheckCircle, AlertCircle, Receipt, Wallet, RotateCcw, Vault } from 'lucide-react'
+import { Lock, Clock, Banknote, Smartphone, CheckCircle, AlertCircle, Receipt, Wallet, RotateCcw } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
@@ -61,13 +61,12 @@ export function SalesPage() {
 // Composant séparé pour accéder au contexte de session
 function SalesContent() {
   const [activeTab, setActiveTab] = useState('sales')
-  const { isSessionClosed, sessionData, openCloseModal, isAdminDirectSale } = useCashSession()
+  const { isSessionClosed, sessionData, openCloseModal } = useCashSession()
   const currentSession = useQuery(api.cashSessions.getCurrentSession)
   const withdrawnExpenses = useQuery(api.expenses.getWithdrawnExpensesForSession, {})
 
-  // Session clôturée - afficher le récapitulatif
-  // SAUF pour les admins qui peuvent continuer en mode vente directe au coffre
-  if (isSessionClosed && currentSession && !isAdminDirectSale) {
+  // Session clôturée - afficher le récapitulatif (admin/manager/cashier confondus)
+  if (isSessionClosed && currentSession) {
     return <ClosedSessionSummary session={currentSession} />
   }
 
@@ -75,26 +74,11 @@ function SalesContent() {
     return new Intl.NumberFormat('fr-FR').format(amount)
   }
 
-  // Session ouverte ou mode admin direct - afficher l'interface de caisse
+  // Session ouverte - afficher l'interface de caisse
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Barre de statut pour l'admin en mode vente directe */}
-      {isAdminDirectSale && (
-        <div className="bg-[#CF761C] text-white px-3 sm:px-6 py-2 flex-shrink-0">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-4">
-            <div className="flex items-center gap-2 text-xs sm:text-sm">
-              <Vault className="w-4 h-4 flex-shrink-0" />
-              <span className="font-medium">Mode Admin - Ventes au coffre</span>
-            </div>
-            <span className="text-white/80 text-xs hidden sm:block">
-              Les ventes en espèces sont automatiquement ajoutées au coffre
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Session status bar (mode normal avec session) */}
-      {sessionData && !isAdminDirectSale && (
+      {/* Session status bar */}
+      {sessionData && (
         <div className="bg-[#016124] text-white px-3 sm:px-6 py-2 flex-shrink-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm">

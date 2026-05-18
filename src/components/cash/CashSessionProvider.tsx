@@ -14,8 +14,6 @@ interface CashSessionContextType {
     userName: string
   } | null
   openCloseModal: () => void
-  /** Indique si l'admin fait des ventes directes (sans session, vers le coffre) */
-  isAdminDirectSale: boolean
 }
 
 const CashSessionContext = createContext<CashSessionContextType | null>(null)
@@ -78,15 +76,14 @@ export function CashSessionProvider({ children, requireSession = true }: CashSes
     )
   }
 
-  // Les admins peuvent toujours bypass (ventes directes au coffre)
-  // Les managers peuvent bypass seulement si requireSession=false (dashboard)
+  // Admin et manager peuvent bypass uniquement sur les pages où requireSession=false
+  // (typiquement le dashboard). Sur la page caisse (requireSession=true), tout le monde
+  // doit ouvrir une session, y compris l'admin.
   const isAdmin = currentUser?.role === 'admin'
   const isManager = currentUser?.role === 'manager'
   const isPrivilegedUser = isAdmin || isManager
 
-  // L'admin peut toujours bypass pour faire des ventes directes au coffre
-  // Les managers ne peuvent bypass que si requireSession=false (dashboard seulement)
-  const canBypassSession = isAdmin || (!requireSession && isManager)
+  const canBypassSession = !requireSession && isPrivilegedUser
 
   const hasOpenSession = sessionStatus.hasSession && sessionStatus.status === 'open'
   const isSessionClosed = sessionStatus.hasSession && sessionStatus.status === 'closed'
@@ -107,27 +104,20 @@ export function CashSessionProvider({ children, requireSession = true }: CashSes
     : null
 
   // Workflow de demande de fond (coffre actif) :
-  // - Seulement pour les caissiers (pas admin/manager)
+  // - Uniquement pour les caissiers (admin/manager saisissent directement leur fond)
   // - Seulement si pas de session et pas déjà clôturée
   // - Seulement si requireSession=true
   const showFundRequestWorkflow = safeIsActive && needsToOpenSession && !fundApproved && !isSessionClosed && !isPrivilegedUser && requireSession
 
   // Modal d'ouverture standard :
-  // - S'affiche si pas de session ouverte
-  // - Ne s'affiche pas pour les admins (ventes directes au coffre)
-  // - Ne s'affiche pas si le workflow de demande est affiché
-  // - Pour les managers sans session, on affiche le modal sur la page caisse (requireSession=true)
-  const shouldShowOpenModal = needsToOpenSession && !isAdmin && !showFundRequestWorkflow && requireSession
+  // - S'affiche si pas de session ouverte (admin, manager et caissier confondus)
+  // - Sauf si le workflow de demande de fond est en cours pour le caissier
+  const shouldShowOpenModal = needsToOpenSession && !showFundRequestWorkflow && requireSession
 
   // Le contenu est visible si :
-  // - L'admin peut toujours voir (ventes directes au coffre)
-  // - Manager peut bypass sur dashboard (!requireSession)
-  // - Ou si le workflow de demande n'est pas affiché (session ouverte ou modal standard géré)
+  // - Admin/manager bypass quand requireSession=false (dashboard)
+  // - Ou si le workflow de demande de fond n'est pas affiché
   const shouldShowContent = canBypassSession || !showFundRequestWorkflow
-
-  // L'admin fait des ventes directes si:
-  // - Il est admin ET il n'a pas de session ouverte ET le coffre est actif
-  const isAdminDirectSale = isAdmin && !hasOpenSession && safeIsActive
 
   return (
     <CashSessionContext.Provider
@@ -136,7 +126,6 @@ export function CashSessionProvider({ children, requireSession = true }: CashSes
         isSessionClosed,
         sessionData,
         openCloseModal,
-        isAdminDirectSale,
       }}
     >
       {/* Workflow de demande de fond de caisse (si coffre actif) - seulement pour les caissiers */}
