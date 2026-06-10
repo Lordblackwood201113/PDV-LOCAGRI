@@ -29,6 +29,10 @@ export default defineSchema({
     email: v.optional(v.string()),      // Email (optionnel)
     quartier: v.optional(v.string()),   // Quartier de résidence (optionnel)
     notes: v.optional(v.string()),      // Notes sur le client
+    type: v.optional(v.union(           // Type de client (défaut: particulier si absent)
+      v.literal("particulier"),
+      v.literal("grossiste")
+    )),
     createdAt: v.number(),          // Date de création
     createdById: v.string(),        // ID de l'utilisateur qui a créé
     createdByName: v.string(),      // Nom (dénormalisé)
@@ -81,6 +85,10 @@ export default defineSchema({
     clientId: v.optional(v.id("clients")),     // Référence au client
     clientReference: v.optional(v.string()),   // Référence client (dénormalisé)
     clientName: v.optional(v.string()),        // Nom complet client (dénormalisé)
+    clientType: v.optional(v.union(            // Type de client au moment de la vente (dénormalisé)
+      v.literal("particulier"),
+      v.literal("grossiste")
+    )),
     // Utilisateur
     userId: v.string(),            // ID Clerk de l'utilisateur
     userName: v.string(),          // Nom du caissier (dénormalisé)

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { Minus, Plus, Banknote, Smartphone, ShoppingBag } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -10,6 +11,9 @@ import { ClientSelector } from '@/components/clients'
 
 type PaymentMethod = 'cash' | 'mobile_money'
 
+// Au-delà de ce facteur d'écart avec le prix catalogue, on alerte (probable faute de frappe)
+const PRICE_ANOMALY_FACTOR = 5
+
 export function QuickSalePanel() {
   const [selectedProductId, setSelectedProductId] = useState<Id<'products'> | null>(null)
   const [quantity, setQuantity] = useState(1)
@@ -17,6 +21,8 @@ export function QuickSalePanel() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedClientId, setSelectedClientId] = useState<Id<'clients'> | null>(null)
   const [selectedClientName, setSelectedClientName] = useState<string | null>(null)
+  const [selectedClientType, setSelectedClientType] = useState<'particulier' | 'grossiste' | null>(null)
+  const [customUnitPrice, setCustomUnitPrice] = useState('')
 
   const products = useQuery(api.products.getProducts)
   const createSale = useMutation(api.sales.createSale)
@@ -44,6 +50,16 @@ export function QuickSalePanel() {
   const handleSale = async () => {
     if (!product || !selectedProductId) return
 
+    // Alerte non bloquante si le prix de gros semble anormal (probable faute de frappe)
+    if (isGrossiste && isCustomPriceValid) {
+      const ratio = parsedCustomPrice / product.price
+      if (ratio < 1 / PRICE_ANOMALY_FACTOR || ratio > PRICE_ANOMALY_FACTOR) {
+        toast.warning('Prix inhabituel', {
+          description: 'Vérifiez le montant saisi pour ce grossiste.',
+        })
+      }
+    }
+
     setIsSubmitting(true)
     try {
       const result = await createSale({
@@ -51,6 +67,7 @@ export function QuickSalePanel() {
         quantity,
         paymentMethod,
         clientId: selectedClientId ?? undefined,
+        unitPrice: isGrossiste ? parsedCustomPrice : undefined,
       })
 
       const clientSuffix = selectedClientName ? ` · ${selectedClientName}` : ''
@@ -68,6 +85,8 @@ export function QuickSalePanel() {
       setQuantity(1)
       setSelectedClientId(null)
       setSelectedClientName(null)
+      setSelectedClientType(null)
+      setCustomUnitPrice('')
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erreur inconnue'
       toast.error('Erreur', { description: message })
@@ -84,8 +103,15 @@ export function QuickSalePanel() {
     )
   }
 
-  const total = product.price * quantity
-  const canSell = product.stockQuantity >= quantity && !isSubmitting
+  const isGrossiste = selectedClientType === 'grossiste'
+  const parsedCustomPrice = Number(customUnitPrice)
+  const isCustomPriceValid = Number.isInteger(parsedCustomPrice) && parsedCustomPrice > 0
+  const effectiveUnitPrice = isGrossiste ? parsedCustomPrice : product.price
+  const total = isGrossiste && !isCustomPriceValid ? 0 : effectiveUnitPrice * quantity
+  const canSell =
+    product.stockQuantity >= quantity &&
+    !isSubmitting &&
+    (!isGrossiste || isCustomPriceValid)
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
@@ -202,13 +228,38 @@ export function QuickSalePanel() {
           <ClientSelector
             selectedClientId={selectedClientId}
             selectedClientName={selectedClientName}
-            onSelect={(clientId, clientName) => {
+            onSelect={(clientId, clientName, _clientReference, clientType) => {
               setSelectedClientId(clientId)
               setSelectedClientName(clientName)
+              setSelectedClientType(clientType)
+              setCustomUnitPrice('')
             }}
             disabled={isSubmitting}
           />
         </div>
+
+        {/* Prix de gros (grossiste uniquement) */}
+        {isGrossiste && (
+          <div className="space-y-2">
+            <label className="text-[10px] sm:text-xs font-medium text-[#016124] uppercase tracking-wide">
+              Prix unitaire grossiste (FCFA)
+            </label>
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              step={1}
+              value={customUnitPrice}
+              onChange={(e) => setCustomUnitPrice(e.target.value)}
+              placeholder={`Prix boutique : ${formatPrice(product.price)}`}
+              disabled={isSubmitting}
+              className="h-10 border-[#016124]/40 focus-visible:ring-[#016124]"
+            />
+            <p className="text-[10px] sm:text-xs text-gray-400">
+              Prix négocié pour ce grossiste · {formatPrice(product.price)} F en boutique
+            </p>
+          </div>
+        )}
 
         {/* Paiement */}
         <div className="space-y-2">
