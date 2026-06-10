@@ -28,6 +28,7 @@ import {
   XCircle,
   Clock,
   Banknote,
+  Landmark,
 } from 'lucide-react'
 import type { Id } from '../../../convex/_generated/dataModel'
 
@@ -37,6 +38,7 @@ export function SafeManagement() {
   const [fundDialogOpen, setFundDialogOpen] = useState(false)
   const [depositDialogOpen, setDepositDialogOpen] = useState(false)
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [bankDialogOpen, setBankDialogOpen] = useState(false)
 
   const [initAmount, setInitAmount] = useState('')
   const [adjustAmount, setAdjustAmount] = useState('')
@@ -45,6 +47,9 @@ export function SafeManagement() {
   const [depositAmount, setDepositAmount] = useState('')
   const [depositNote, setDepositNote] = useState('')
   const [rejectReason, setRejectReason] = useState('')
+  const [bankAmount, setBankAmount] = useState('')
+  const [bankReference, setBankReference] = useState('')
+  const [bankNote, setBankNote] = useState('')
 
   const [selectedFundRequest, setSelectedFundRequest] = useState<Id<'cashFundRequests'> | null>(null)
   const [selectedFundRequesterName, setSelectedFundRequesterName] = useState('')
@@ -65,6 +70,7 @@ export function SafeManagement() {
   const approveFundRequest = useMutation(api.safe.approveFundRequest)
   const rejectFundRequest = useMutation(api.safe.rejectFundRequest)
   const confirmDeposit = useMutation(api.safe.confirmDeposit)
+  const recordBankDeposit = useMutation(api.safe.recordBankDeposit)
 
   const formatPrice = (amount: number) => {
     return new Intl.NumberFormat('fr-FR').format(amount)
@@ -230,6 +236,40 @@ export function SafeManagement() {
     }
   }
 
+  const handleBankDeposit = async () => {
+    if (!safeStatus) return
+    const amount = parseInt(bankAmount.replace(/\D/g, ''))
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Montant invalide')
+      return
+    }
+    if (amount > safeStatus.currentBalance) {
+      toast.error('Le montant dépasse le solde du coffre')
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const result = await recordBankDeposit({
+        amount,
+        reference: bankReference.trim() || undefined,
+        note: bankNote.trim() || undefined,
+      })
+      toast.success('Versement enregistré', {
+        description: `${formatPrice(amount)} FCFA versés · nouveau solde: ${formatPrice(result.newBalance)} FCFA`,
+      })
+      setBankDialogOpen(false)
+      setBankAmount('')
+      setBankReference('')
+      setBankNote('')
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erreur inconnue'
+      toast.error('Erreur', { description: message })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const openFundDialog = (requestId: Id<'cashFundRequests'>, requesterName: string) => {
     setSelectedFundRequest(requestId)
     setSelectedFundRequesterName(requesterName)
@@ -363,15 +403,26 @@ export function SafeManagement() {
             </div>
           </div>
           {currentUser.role === 'admin' && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setAdjustDialogOpen(true)}
-              className="bg-white/20 hover:bg-white/30 text-white border-0 self-end sm:self-auto text-xs sm:text-sm h-8 sm:h-9"
-            >
-              <Settings className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              Ajuster
-            </Button>
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setBankDialogOpen(true)}
+                className="bg-white/20 hover:bg-white/30 text-white border-0 text-xs sm:text-sm h-8 sm:h-9"
+              >
+                <Landmark className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                Versement
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setAdjustDialogOpen(true)}
+                className="bg-white/20 hover:bg-white/30 text-white border-0 text-xs sm:text-sm h-8 sm:h-9"
+              >
+                <Settings className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                Ajuster
+              </Button>
+            </div>
           )}
         </div>
         <p className="text-[10px] sm:text-xs text-white/60 mt-2 sm:mt-3">
@@ -530,14 +581,20 @@ export function SafeManagement() {
                           Ajustement
                         </Badge>
                       )}
+                      {tx.type === 'bank_deposit' && (
+                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-[10px] sm:text-xs">
+                          <Landmark className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
+                          Versement banque
+                        </Badge>
+                      )}
                       <span className="text-[10px] sm:text-xs text-gray-500">
                         {formatDate(tx.date)}
                       </span>
                     </div>
                     <span className={`font-semibold text-sm sm:text-base flex-shrink-0 ${
-                      tx.type === 'withdrawal' ? 'text-red-600' : 'text-green-600'
+                      tx.newBalance < tx.previousBalance ? 'text-red-600' : 'text-green-600'
                     }`}>
-                      {tx.type === 'withdrawal' ? '-' : '+'}{formatPrice(tx.amount)} F
+                      {tx.newBalance < tx.previousBalance ? '-' : '+'}{formatPrice(Math.abs(tx.amount))} F
                     </span>
                   </div>
                   <p className="text-xs sm:text-sm text-gray-600 truncate">{tx.reason}</p>
@@ -728,6 +785,85 @@ export function SafeManagement() {
               className="bg-[#016124] hover:bg-[#017a2e]"
             >
               {isSubmitting ? 'Confirmation...' : 'Confirmer le versement'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de versement bancaire (coffre -> compte entreprise) */}
+      <Dialog open={bankDialogOpen} onOpenChange={setBankDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Landmark className="w-5 h-5 text-[#016124]" />
+              Versement sur le compte de l'entreprise
+            </DialogTitle>
+            <DialogDescription>
+              Sortez de l'argent du coffre pour le déposer sur le compte bancaire de l'entreprise.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Solde actuel du coffre</span>
+                <span className="font-medium">{formatPrice(safeStatus.currentBalance)} FCFA</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Montant à verser (FCFA) *</Label>
+              <Input
+                type="text"
+                inputMode="numeric"
+                value={bankAmount ? formatPrice(parseInt(bankAmount) || 0) : ''}
+                onChange={(e) => setBankAmount(e.target.value.replace(/\D/g, ''))}
+                placeholder="Ex: 200 000"
+                className="text-xl text-center"
+              />
+            </div>
+            {bankAmount && parseInt(bankAmount) > safeStatus.currentBalance && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg text-red-700 text-sm">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <span>Le montant dépasse le solde du coffre</span>
+              </div>
+            )}
+            {bankAmount && parseInt(bankAmount) > 0 && parseInt(bankAmount) <= safeStatus.currentBalance && (
+              <div className="p-3 bg-[#016124]/5 rounded-lg">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Solde après versement</span>
+                  <span className="font-medium text-[#016124]">
+                    {formatPrice(safeStatus.currentBalance - parseInt(bankAmount))} FCFA
+                  </span>
+                </div>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Référence / bordereau (optionnel)</Label>
+              <Input
+                type="text"
+                value={bankReference}
+                onChange={(e) => setBankReference(e.target.value)}
+                placeholder="N° de bordereau, banque..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Note (optionnel)</Label>
+              <Textarea
+                value={bankNote}
+                onChange={(e) => setBankNote(e.target.value)}
+                placeholder="Précisions sur ce versement..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBankDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handleBankDeposit}
+              disabled={isSubmitting || !bankAmount || parseInt(bankAmount) <= 0 || parseInt(bankAmount) > safeStatus.currentBalance}
+              className="bg-[#016124] hover:bg-[#017a2e]"
+            >
+              {isSubmitting ? 'Versement...' : 'Confirmer le versement'}
             </Button>
           </DialogFooter>
         </DialogContent>

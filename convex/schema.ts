@@ -174,7 +174,8 @@ export default defineSchema({
       v.literal("initial"),          // Solde initial de démarrage
       v.literal("withdrawal"),       // Retrait (fond de caisse)
       v.literal("deposit"),          // Dépôt (versement caissier)
-      v.literal("adjustment")        // Ajustement manuel
+      v.literal("adjustment"),       // Ajustement manuel
+      v.literal("bank_deposit")      // Versement vers le compte bancaire de l'entreprise (sortie)
     ),
     amount: v.number(),              // Montant de la transaction
     previousBalance: v.number(),     // Solde avant

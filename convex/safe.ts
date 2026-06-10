@@ -58,7 +58,8 @@ export const getTransactionHistory = query({
       v.literal("initial"),
       v.literal("withdrawal"),
       v.literal("deposit"),
-      v.literal("adjustment")
+      v.literal("adjustment"),
+      v.literal("bank_deposit")
     )),
   },
   handler: async (ctx, args) => {
@@ -402,6 +403,78 @@ export const adjustSafe = mutation({
     });
 
     return { previousBalance: safe.currentBalance, newBalance };
+  },
+});
+
+/**
+ * Versement vers le compte bancaire de l'entreprise (admin uniquement)
+ * Sort de l'argent du coffre pour le déposer sur le compte de l'entreprise.
+ */
+export const recordBankDeposit = mutation({
+  args: {
+    amount: v.number(),
+    reference: v.optional(v.string()), // N° de bordereau / référence bancaire
+    note: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user || user.role !== "admin") {
+      throw new Error("Seul un administrateur peut effectuer un versement bancaire");
+    }
+
+    const safe = await ctx.db.query("safe").first();
+    if (!safe) {
+      throw new Error("Le coffre n'est pas initialisé");
+    }
+
+    if (!Number.isInteger(args.amount) || args.amount <= 0) {
+      throw new Error("Le montant doit être un entier positif");
+    }
+
+    if (args.amount > safe.currentBalance) {
+      throw new Error("Le montant dépasse le solde du coffre");
+    }
+
+    const now = Date.now();
+    const newBalance = safe.currentBalance - args.amount;
+
+    // Mettre à jour le coffre
+    await ctx.db.patch(safe._id, {
+      currentBalance: newBalance,
+      lastUpdated: now,
+      updatedBy: identity.subject,
+      updatedByName: user.name,
+    });
+
+    // Construire le motif à partir de la référence / note optionnelles
+    const ref = args.reference?.trim();
+    const note = args.note?.trim();
+    let reason = "Versement sur le compte de l'entreprise";
+    if (ref) reason += ` (réf: ${ref})`;
+    if (note) reason += ` - ${note}`;
+
+    // Enregistrer la transaction
+    await ctx.db.insert("safeTransactions", {
+      type: "bank_deposit",
+      amount: args.amount,
+      previousBalance: safe.currentBalance,
+      newBalance,
+      performedById: identity.subject,
+      performedByName: user.name,
+      reason,
+      date: now,
+    });
+
+    return { previousBalance: safe.currentBalance, newBalance, amount: args.amount };
   },
 });
 
