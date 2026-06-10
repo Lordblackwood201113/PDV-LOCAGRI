@@ -33,6 +33,7 @@ export const getClients = query({
 
     return clients.map((c) => ({
       ...c,
+      type: c.type ?? "particulier",
       displayName: formatClientName(c.firstName, c.lastName, c.reference),
     }));
   },
@@ -86,6 +87,7 @@ export const searchClients = query({
 
     return results.slice(0, 10).map((c) => ({
       ...c,
+      type: c.type ?? "particulier",
       displayName: formatClientName(c.firstName, c.lastName, c.reference),
     }));
   },
@@ -152,6 +154,7 @@ export const createClient = mutation({
     email: v.optional(v.string()),
     quartier: v.optional(v.string()),
     notes: v.optional(v.string()),
+    type: v.optional(v.union(v.literal("particulier"), v.literal("grossiste"))),
   },
   returns: v.object({
     clientId: v.id("clients"),
@@ -205,6 +208,7 @@ export const createClient = mutation({
       email: args.email?.trim() || undefined,
       quartier: args.quartier?.trim() || undefined,
       notes: args.notes?.trim() || undefined,
+      type: args.type ?? "particulier",
       createdAt: now,
       createdById: identity.subject,
       createdByName: user.name,
@@ -235,6 +239,7 @@ export const updateClient = mutation({
     email: v.optional(v.string()),
     quartier: v.optional(v.string()),
     notes: v.optional(v.string()),
+    type: v.optional(v.union(v.literal("particulier"), v.literal("grossiste"))),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -273,6 +278,8 @@ export const updateClient = mutation({
       email: args.email?.trim() || undefined,
       quartier: args.quartier?.trim() || undefined,
       notes: args.notes?.trim() || undefined,
+      // Préserver le type existant si non fourni (défaut: particulier)
+      type: args.type ?? client.type ?? "particulier",
     });
 
     return { success: true };
