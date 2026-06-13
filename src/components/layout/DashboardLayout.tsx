@@ -29,6 +29,7 @@ export function DashboardLayout({
     dashboard: { title: 'Tableau de bord', description: 'Vue d\'ensemble de votre activité' },
     sales: { title: 'Caisse', description: 'Enregistrez vos ventes' },
     clients: { title: 'Clients', description: 'Répertoire et gestion des clients' },
+    assistant: { title: 'Assistant IA', description: 'Posez vos questions sur votre activité' },
     stock: { title: 'Gestion du Stock', description: 'Suivez et gérez votre inventaire' },
     reports: { title: 'Rapports', description: 'Analysez vos performances' },
     safe: { title: 'Gestion du Coffre', description: 'Gérez les fonds et versements' },

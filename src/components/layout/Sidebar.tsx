@@ -12,13 +12,14 @@ import {
   ChevronRight,
   Vault,
   Users,
+  Sparkles,
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 
-export type Page = 'dashboard' | 'sales' | 'stock' | 'reports' | 'admin' | 'safe' | 'clients'
+export type Page = 'dashboard' | 'sales' | 'stock' | 'reports' | 'admin' | 'safe' | 'clients' | 'assistant'
 
 interface SidebarProps {
   currentPage: Page
@@ -80,6 +81,7 @@ export function Sidebar({
   // Rapports : tous les rôles actifs (le contenu s'adapte, cashier = ses ventes)
   const canAccessReports = userRole === 'admin' || userRole === 'manager' || userRole === 'cashier'
   const canAccessAdmin = userRole === 'admin'
+  const canAccessAssistant = userRole === 'admin'
   const canAccessSafe = userRole === 'admin' || userRole === 'manager'
   // Répertoire clients : accessible à tous (cashier en lecture, manager+ en édition)
   const canAccessClients = userRole === 'admin' || userRole === 'manager' || userRole === 'cashier'
@@ -121,6 +123,12 @@ export function Sidebar({
       icon: Vault,
       visible: canAccessSafe,
       badge: safePendingCount > 0 ? safePendingCount : undefined,
+    },
+    {
+      id: 'assistant' as Page,
+      label: 'Assistant IA',
+      icon: Sparkles,
+      visible: canAccessAssistant,
     },
     {
       id: 'admin' as Page,

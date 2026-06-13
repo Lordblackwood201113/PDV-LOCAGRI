@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { writeAuditLog } from "./audit";
 
 // ============================================
 // QUERIES
@@ -150,7 +151,24 @@ export const getOrCreateUser = mutation({
       lastLoginAt: now,
     });
 
-    return await ctx.db.get(userId);
+    const newUser = await ctx.db.get(userId);
+
+    // Bootstrap : tracer uniquement la création du tout premier compte (admin).
+    // Les créations normales (rôle pending) ne sont pas loguées pour éviter le bruit.
+    if (isFirstUser && newUser) {
+      await writeAuditLog(ctx, {
+        actor: { id: identity.subject, name: newUser.name, role: newUser.role },
+        action: "user.admin_bootstrap",
+        category: "user",
+        summary: `Premier compte créé en administrateur : ${newUser.name}`,
+        targetType: "user",
+        targetId: userId,
+        targetName: newUser.name,
+        after: "admin",
+      });
+    }
+
+    return newUser;
   },
 });
 
@@ -193,7 +211,21 @@ export const updateUserRole = mutation({
       throw new Error("Vous ne pouvez pas retirer votre propre rôle admin");
     }
 
+    const previousRole = targetUser.role;
+
     await ctx.db.patch(args.userId, { role: args.newRole });
+
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: currentUser.name, role: currentUser.role },
+      action: "user.role_changed",
+      category: "user",
+      summary: `Rôle de ${targetUser.name} : ${previousRole} → ${args.newRole}`,
+      targetType: "user",
+      targetId: args.userId,
+      targetName: targetUser.name,
+      before: previousRole,
+      after: args.newRole,
+    });
 
     return { success: true };
   },
@@ -227,7 +259,23 @@ export const toggleUserActive = mutation({
       throw new Error("Vous ne pouvez pas désactiver votre propre compte");
     }
 
+    const targetUser = await ctx.db.get(args.userId);
+
     await ctx.db.patch(args.userId, { isActive: args.isActive });
+
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: currentUser.name, role: currentUser.role },
+      action: args.isActive ? "user.activated" : "user.deactivated",
+      category: "user",
+      summary: `Compte ${targetUser?.name ?? "inconnu"} ${
+        args.isActive ? "activé" : "désactivé"
+      }`,
+      targetType: "user",
+      targetId: args.userId,
+      targetName: targetUser?.name,
+      before: args.isActive ? "désactivé" : "actif",
+      after: args.isActive ? "actif" : "désactivé",
+    });
 
     return { success: true };
   },

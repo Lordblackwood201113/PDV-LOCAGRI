@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
-import { UserManagement, ProductManagement, ExpenseManagement } from '@/components/admin'
+import { UserManagement, ProductManagement, ExpenseManagement, AuditLog } from '@/components/admin'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ShieldOff } from 'lucide-react'
 
@@ -46,10 +46,11 @@ export function AdminPage() {
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">Administration</h2>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 h-auto">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
             <TabsTrigger value="products" className="text-xs sm:text-sm py-2">Produits</TabsTrigger>
             <TabsTrigger value="expenses" className="text-xs sm:text-sm py-2">Dépenses</TabsTrigger>
             <TabsTrigger value="users" className="text-xs sm:text-sm py-2">Utilisateurs</TabsTrigger>
+            <TabsTrigger value="audit" className="text-xs sm:text-sm py-2">Journal</TabsTrigger>
           </TabsList>
 
           {/* Onglet Gestion des produits */}
@@ -65,6 +66,11 @@ export function AdminPage() {
           {/* Onglet Gestion des utilisateurs */}
           <TabsContent value="users" className="mt-3 sm:mt-4">
             <UserManagement />
+          </TabsContent>
+
+          {/* Onglet Journal d'activité */}
+          <TabsContent value="audit" className="mt-3 sm:mt-4">
+            <AuditLog />
           </TabsContent>
         </Tabs>
       </div>

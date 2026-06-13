@@ -5,7 +5,7 @@ import { mutation, query, internalMutation } from "./_generated/server";
 // TYPES DE RÉFÉRENCES
 // ============================================
 
-type ReferenceType = "product" | "client" | "sale" | "movement";
+type ReferenceType = "product" | "client" | "sale" | "movement" | "payment" | "log";
 
 // Préfixes pour chaque type
 const PREFIXES: Record<ReferenceType, string> = {
@@ -13,7 +13,12 @@ const PREFIXES: Record<ReferenceType, string> = {
   client: "CLI",
   sale: "VNT",
   movement: "MVT",
+  payment: "REG",
+  log: "LOG",
 };
+
+// Types dont la référence inclut la date (compteur quotidien)
+const DATED_TYPES: ReferenceType[] = ["sale", "movement", "payment", "log"];
 
 // ============================================
 // FONCTIONS UTILITAIRES (internes)
@@ -42,7 +47,7 @@ function formatReference(
   const prefix = PREFIXES[type];
   const paddedCount = String(count).padStart(5, "0");
 
-  if (type === "sale" || type === "movement") {
+  if (DATED_TYPES.includes(type)) {
     return `${prefix}-${dateStr}-${paddedCount}`;
   }
 
@@ -59,7 +64,9 @@ export const getNextReference = internalMutation({
       v.literal("product"),
       v.literal("client"),
       v.literal("sale"),
-      v.literal("movement")
+      v.literal("movement"),
+      v.literal("payment"),
+      v.literal("log")
     ),
   },
   returns: v.string(),
@@ -67,8 +74,8 @@ export const getNextReference = internalMutation({
     const now = new Date();
     const dateStr = formatDateForReference(now);
 
-    // Pour les types avec date (sale, movement), on utilise le compteur quotidien
-    const needsDate = args.type === "sale" || args.type === "movement";
+    // Pour les types avec date (sale, movement, payment), on utilise le compteur quotidien
+    const needsDate = DATED_TYPES.includes(args.type);
     const queryDate = needsDate ? dateStr : undefined;
 
     // Chercher le compteur existant
@@ -176,7 +183,7 @@ export const migrateProductReferences = mutation({
     }
 
     // Obtenir ou créer le compteur
-    let counter = await ctx.db
+    const counter = await ctx.db
       .query("counters")
       .withIndex("by_type", (q) => q.eq("type", "product"))
       .filter((q) => q.eq(q.field("date"), undefined))

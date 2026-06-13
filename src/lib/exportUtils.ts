@@ -11,7 +11,7 @@ export interface SaleExportData {
   quantity: number
   unitPrice: number
   total: number
-  paymentMethod: 'cash' | 'mobile_money'
+  paymentMethod: 'cash' | 'mobile_money' | 'credit'
   userName: string
   clientName?: string
   clientReference?: string
@@ -71,7 +71,12 @@ export function exportSalesToExcel(
     'Quantité': sale.quantity,
     'Prix unitaire (FCFA)': sale.unitPrice,
     'Total (FCFA)': sale.total,
-    'Mode de paiement': sale.paymentMethod === 'cash' ? 'Espèces' : 'Mobile Money',
+    'Mode de paiement':
+      sale.paymentMethod === 'cash'
+        ? 'Espèces'
+        : sale.paymentMethod === 'credit'
+          ? 'Crédit'
+          : 'Mobile Money',
     'Client': sale.clientName || '-',
     'Réf. Client': sale.clientReference || '-',
     'Type client': sale.clientType === 'grossiste' ? 'Grossiste' : sale.clientType === 'particulier' ? 'Particulier' : '-',
@@ -197,4 +202,63 @@ export function exportStockMovementsToExcel(
   const typeLabel = exportTypeLabels[exportType].replace(/\s/g, '_')
   const filename = `${typeLabel}_${formatFilenameDate(startDate)}_au_${formatFilenameDate(endDate)}.xlsx`
   XLSX.writeFile(workbook, filename)
+}
+
+// ============================================
+// Journal d'audit
+// ============================================
+export interface AuditLogExportData {
+  reference: string
+  date: number
+  actorName: string
+  actorRole: string
+  action: string
+  category: string
+  targetName?: string
+  targetRef?: string
+  before?: string
+  after?: string
+  summary: string
+}
+
+export function exportAuditLogsToExcel(
+  logs: AuditLogExportData[],
+  startDate?: Date,
+  endDate?: Date
+): void {
+  const data = logs.map((l) => ({
+    'Référence': l.reference,
+    'Date': formatExportDate(l.date),
+    'Acteur': l.actorName,
+    'Rôle': l.actorRole,
+    'Action': l.action,
+    'Catégorie': l.category,
+    'Cible': l.targetName || l.targetRef || '-',
+    'Avant': l.before ?? '-',
+    'Après': l.after ?? '-',
+    'Résumé': l.summary,
+  }))
+
+  const worksheet = XLSX.utils.json_to_sheet(data)
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Journal')
+
+  worksheet['!cols'] = [
+    { wch: 20 }, // Référence
+    { wch: 18 }, // Date
+    { wch: 20 }, // Acteur
+    { wch: 10 }, // Rôle
+    { wch: 22 }, // Action
+    { wch: 12 }, // Catégorie
+    { wch: 22 }, // Cible
+    { wch: 14 }, // Avant
+    { wch: 14 }, // Après
+    { wch: 50 }, // Résumé
+  ]
+
+  const range =
+    startDate && endDate
+      ? `_${formatFilenameDate(startDate)}_au_${formatFilenameDate(endDate)}`
+      : ''
+  XLSX.writeFile(workbook, `Journal_audit${range}.xlsx`)
 }

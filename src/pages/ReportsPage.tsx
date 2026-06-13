@@ -8,7 +8,7 @@ import { ClientSelector } from '@/components/clients'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Banknote, Smartphone, Wallet, Receipt, Calendar } from 'lucide-react'
+import { Banknote, Smartphone, Notebook, Wallet, Receipt, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type DateRange = 'today' | '7days' | '30days'
@@ -180,10 +180,16 @@ export function ReportsPage() {
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        sale.paymentMethod === 'cash' ? 'bg-[#7ABE4E]/10' : 'bg-[#CF761C]/10'
+                        sale.paymentMethod === 'cash'
+                          ? 'bg-[#7ABE4E]/10'
+                          : sale.paymentMethod === 'credit'
+                            ? 'bg-[#7C3AED]/10'
+                            : 'bg-[#CF761C]/10'
                       }`}>
                         {sale.paymentMethod === 'cash' ? (
                           <Banknote className="w-4 h-4 text-[#016124]" />
+                        ) : sale.paymentMethod === 'credit' ? (
+                          <Notebook className="w-4 h-4 text-[#7C3AED]" />
                         ) : (
                           <Smartphone className="w-4 h-4 text-[#CF761C]" />
                         )}
@@ -218,7 +224,11 @@ export function ReportsPage() {
                     </div>
                     <div className="flex items-center justify-between sm:justify-end gap-2 pl-11 sm:pl-0">
                       <Badge variant="outline" className="text-[10px] sm:hidden">
-                        {sale.paymentMethod === 'cash' ? 'Espèces' : 'Mobile'}
+                        {sale.paymentMethod === 'cash'
+                          ? 'Espèces'
+                          : sale.paymentMethod === 'credit'
+                            ? 'Crédit'
+                            : 'Mobile'}
                       </Badge>
                       <span className="font-semibold text-sm whitespace-nowrap">
                         {formatPrice(sale.total)} F
