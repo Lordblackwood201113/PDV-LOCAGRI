@@ -22,10 +22,17 @@ import { toast } from 'sonner'
 import { User, UserPlus, Search, X, Check, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+type ClientType = 'particulier' | 'grossiste'
+
 interface ClientSelectorProps {
   selectedClientId: Id<'clients'> | null
   selectedClientName: string | null
-  onSelect: (clientId: Id<'clients'> | null, clientName: string | null, clientReference: string | null) => void
+  onSelect: (
+    clientId: Id<'clients'> | null,
+    clientName: string | null,
+    clientReference: string | null,
+    clientType: ClientType | null
+  ) => void
   disabled?: boolean
 }
 
@@ -43,6 +50,7 @@ export function ClientSelector({
     lastName: '',
     phone: '',
     quartier: '',
+    type: 'particulier' as ClientType,
   })
   const [isCreating, setIsCreating] = useState(false)
 
@@ -59,14 +67,15 @@ export function ClientSelector({
     _id: Id<'clients'>
     reference: string
     displayName: string
+    type?: ClientType
   }) => {
-    onSelect(client._id, client.displayName, client.reference)
+    onSelect(client._id, client.displayName, client.reference, client.type ?? 'particulier')
     setOpen(false)
     setSearchQuery('')
   }
 
   const handleClearClient = () => {
-    onSelect(null, null, null)
+    onSelect(null, null, null, null)
   }
 
   const handleCreateClient = async () => {
@@ -87,16 +96,17 @@ export function ClientSelector({
         lastName: hasLastName || undefined,
         phone: hasPhone || undefined,
         quartier: hasQuartier || undefined,
+        type: newClient.type,
       })
 
       toast.success('Client créé', {
         description: `${result.displayName} (${result.reference})`,
       })
 
-      onSelect(result.clientId, result.displayName, result.reference)
+      onSelect(result.clientId, result.displayName, result.reference, newClient.type)
       setCreateDialogOpen(false)
       setOpen(false)
-      setNewClient({ firstName: '', lastName: '', phone: '', quartier: '' })
+      setNewClient({ firstName: '', lastName: '', phone: '', quartier: '', type: 'particulier' })
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erreur inconnue'
       toast.error('Erreur', { description: message })
@@ -277,6 +287,30 @@ export function ClientSelector({
                 placeholder="Cocody, Yopougon, Plateau..."
                 disabled={isCreating}
               />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Type de client</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['particulier', 'grossiste'] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setNewClient({ ...newClient, type: t })}
+                    disabled={isCreating}
+                    className={cn(
+                      'p-2.5 rounded-lg border-2 text-sm font-medium transition-all',
+                      newClient.type === t
+                        ? 'border-[#016124] bg-[#016124]/5 text-[#016124]'
+                        : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
+                    )}
+                  >
+                    {t === 'particulier' ? 'Particulier' : 'Grossiste'}
+                  </button>
+                ))}
+              </div>
+              {newClient.type === 'grossiste' && (
+                <p className="text-[10px] text-gray-400">Prix saisi librement à chaque vente.</p>
+              )}
             </div>
           </div>
 

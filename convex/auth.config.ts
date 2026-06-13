@@ -4,12 +4,22 @@
 const authConfig = {
   providers: [
     {
-      // L'URL de l'issuer Clerk - configurée dans Convex Dashboard > Settings > Environment Variables
-      // Format: https://votre-app.clerk.accounts.dev
+      // L'URL de l'issuer Clerk (production) - variable d'environnement du backend Convex
+      // Format: https://clerk.votre-domaine.com
       domain: process.env.CLERK_JWT_ISSUER_DOMAIN,
       // Doit correspondre au nom du JWT Template dans Clerk
       applicationID: "convex",
     },
+    // Issuer Clerk de développement (optionnel) - permet de tester en local
+    // avec les clés pk_test, car les clés pk_live sont bloquées sur localhost
+    ...(process.env.CLERK_JWT_ISSUER_DOMAIN_DEV
+      ? [
+          {
+            domain: process.env.CLERK_JWT_ISSUER_DOMAIN_DEV,
+            applicationID: "convex",
+          },
+        ]
+      : []),
   ],
 };
 

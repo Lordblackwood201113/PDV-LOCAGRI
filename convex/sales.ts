@@ -297,6 +297,7 @@ export const createSale = mutation({
       v.literal("credit")
     ),
     clientId: v.optional(v.id("clients")), // Client optionnel (obligatoire si crédit)
+    unitPrice: v.optional(v.number()),     // Prix unitaire libre (grossiste uniquement)
     amountReceived: v.optional(v.number()), // Espèces remises par le client (vente espèces)
     changeMethod: v.optional(             // Comment la monnaie est rendue (si monnaie > 0)
       v.union(v.literal("cash"), v.literal("mobile_money"))
@@ -367,8 +368,28 @@ export const createSale = mutation({
       }
     }
 
+    // Type de client (défaut: particulier si non spécifié ou vente sans client)
+    const clientType: "particulier" | "grossiste" = client?.type ?? "particulier";
+
+    // Prix unitaire effectif appliqué :
+    // - grossiste                    -> prix saisi librement par le caissier (entier > 0 requis)
+    // - particulier / sans client    -> prix catalogue du produit (tout prix transmis est ignoré)
+    let effectiveUnitPrice: number;
+    if (clientType === "grossiste") {
+      if (
+        args.unitPrice === undefined ||
+        !Number.isInteger(args.unitPrice) ||
+        args.unitPrice <= 0
+      ) {
+        throw new Error("Prix de gros invalide : saisissez un montant entier positif.");
+      }
+      effectiveUnitPrice = args.unitPrice;
+    } else {
+      effectiveUnitPrice = product.price;
+    }
+
     const now = Date.now();
-    const total = product.price * args.quantity;
+    const total = effectiveUnitPrice * args.quantity;
     const newStock = product.stockQuantity - args.quantity;
 
     // Vente à crédit (ardoise) : client identifié obligatoire, tout ou rien
@@ -415,7 +436,7 @@ export const createSale = mutation({
       productName: product.name,
       productReference: product.reference,
       quantity: args.quantity,
-      unitPrice: product.price,
+      unitPrice: effectiveUnitPrice,
       total,
       paymentMethod: args.paymentMethod,
       paymentStatus,
@@ -427,6 +448,7 @@ export const createSale = mutation({
       clientId: args.clientId,
       clientReference,
       clientName,
+      clientType,
       userId: identity.subject,
       userName: user.name,
     });

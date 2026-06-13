@@ -15,6 +15,7 @@ export interface SaleExportData {
   userName: string
   clientName?: string
   clientReference?: string
+  clientType?: 'particulier' | 'grossiste'
 }
 
 export interface StockMovementExportData {
@@ -78,6 +79,7 @@ export function exportSalesToExcel(
           : 'Mobile Money',
     'Client': sale.clientName || '-',
     'Réf. Client': sale.clientReference || '-',
+    'Type client': sale.clientType === 'grossiste' ? 'Grossiste' : sale.clientType === 'particulier' ? 'Particulier' : '-',
     'Vendeur': sale.userName,
   }))
 
@@ -96,6 +98,7 @@ export function exportSalesToExcel(
     'Mode de paiement': '',
     'Client': '',
     'Réf. Client': '',
+    'Type client': '',
     'Vendeur': '',
   })
 
@@ -115,6 +118,7 @@ export function exportSalesToExcel(
     { wch: 15 }, // Mode paiement
     { wch: 20 }, // Client
     { wch: 12 }, // Réf. Client
+    { wch: 14 }, // Type client
     { wch: 20 }, // Vendeur
   ]
   worksheet['!cols'] = colWidths

@@ -32,6 +32,10 @@ export default defineSchema({
     quartier: v.optional(v.string()),   // Quartier de résidence (optionnel)
     notes: v.optional(v.string()),      // Notes sur le client
     balance: v.optional(v.number()),    // Encours (total dû) — crédit/ardoise, défaut 0
+    type: v.optional(v.union(           // Type de client (défaut: particulier si absent)
+      v.literal("particulier"),
+      v.literal("grossiste")
+    )),
     createdAt: v.number(),          // Date de création
     createdById: v.string(),        // ID de l'utilisateur qui a créé
     createdByName: v.string(),      // Nom (dénormalisé)
@@ -120,6 +124,10 @@ export default defineSchema({
     clientId: v.optional(v.id("clients")),     // Référence au client
     clientReference: v.optional(v.string()),   // Référence client (dénormalisé)
     clientName: v.optional(v.string()),        // Nom complet client (dénormalisé)
+    clientType: v.optional(v.union(            // Type de client au moment de la vente (dénormalisé)
+      v.literal("particulier"),
+      v.literal("grossiste")
+    )),
     // Utilisateur
     userId: v.string(),            // ID Clerk de l'utilisateur
     userName: v.string(),          // Nom du caissier (dénormalisé)
@@ -208,7 +216,8 @@ export default defineSchema({
       v.literal("initial"),          // Solde initial de démarrage
       v.literal("withdrawal"),       // Retrait (fond de caisse)
       v.literal("deposit"),          // Dépôt (versement caissier)
-      v.literal("adjustment")        // Ajustement manuel
+      v.literal("adjustment"),       // Ajustement manuel
+      v.literal("bank_deposit")      // Versement vers le compte bancaire de l'entreprise (sortie)
     ),
     amount: v.number(),              // Montant de la transaction
     previousBalance: v.number(),     // Solde avant

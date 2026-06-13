@@ -44,6 +44,7 @@ type ClientDoc = {
   quartier?: string
   notes?: string
   balance?: number
+  type?: 'particulier' | 'grossiste'
   isActive: boolean
   createdAt: number
   createdByName: string
@@ -286,6 +287,16 @@ function ClientRow({
             <Badge variant="secondary" className="text-[10px] font-mono">
               {client.reference}
             </Badge>
+            <Badge
+              variant="outline"
+              className={`text-[10px] ${
+                client.type === 'grossiste'
+                  ? 'text-[#016124] border-[#016124]'
+                  : 'text-gray-500 border-gray-300'
+              }`}
+            >
+              {client.type === 'grossiste' ? 'Grossiste' : 'Particulier'}
+            </Badge>
             {!client.isActive && (
               <Badge variant="outline" className="text-[10px] text-[#CF761C] border-[#CF761C]">
                 Archivé
@@ -372,6 +383,48 @@ function ClientRow({
 }
 
 // ============================================
+// Sélecteur de type (réutilisé création / édition)
+// ============================================
+
+function ClientTypeToggle({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: 'particulier' | 'grossiste'
+  onChange: (t: 'particulier' | 'grossiste') => void
+  disabled?: boolean
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>Type de client</Label>
+      <div className="grid grid-cols-2 gap-2">
+        {(['particulier', 'grossiste'] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => onChange(t)}
+            disabled={disabled}
+            className={`p-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
+              value === t
+                ? 'border-[#016124] bg-[#016124]/5 text-[#016124]'
+                : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
+            }`}
+          >
+            {t === 'particulier' ? 'Particulier' : 'Grossiste'}
+          </button>
+        ))}
+      </div>
+      {value === 'grossiste' && (
+        <p className="text-[10px] text-muted-foreground">
+          Le prix est saisi librement lors de chaque vente.
+        </p>
+      )}
+    </div>
+  )
+}
+
+// ============================================
 // Create dialog
 // ============================================
 
@@ -383,10 +436,10 @@ function CreateClientDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const createClient = useMutation(api.clients.createClient)
-  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', email: '', quartier: '', notes: '' })
+  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', email: '', quartier: '', notes: '', type: 'particulier' as 'particulier' | 'grossiste' })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const reset = () => setForm({ firstName: '', lastName: '', phone: '', email: '', quartier: '', notes: '' })
+  const reset = () => setForm({ firstName: '', lastName: '', phone: '', email: '', quartier: '', notes: '', type: 'particulier' as 'particulier' | 'grossiste' })
 
   const handleSubmit = async () => {
     const first = form.firstName.trim()
@@ -407,6 +460,7 @@ function CreateClientDialog({
         email: form.email.trim() || undefined,
         quartier: form.quartier.trim() || undefined,
         notes: form.notes.trim() || undefined,
+        type: form.type,
       })
       toast.success('Client créé', {
         description: `${result.displayName} (${result.reference})`,
@@ -434,6 +488,11 @@ function CreateClientDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
+          <ClientTypeToggle
+            value={form.type}
+            onChange={(t) => setForm({ ...form, type: t })}
+            disabled={isSubmitting}
+          />
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="create-firstName">Prénom</Label>
@@ -553,6 +612,7 @@ function EditClientDialog({
     email: client.email ?? '',
     quartier: client.quartier ?? '',
     notes: client.notes ?? '',
+    type: (client.type ?? 'particulier') as 'particulier' | 'grossiste',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -567,6 +627,7 @@ function EditClientDialog({
         email: form.email.trim() || undefined,
         quartier: form.quartier.trim() || undefined,
         notes: form.notes.trim() || undefined,
+        type: form.type,
       })
       toast.success('Client mis à jour')
       onOpenChange(false)
@@ -589,6 +650,11 @@ function EditClientDialog({
           <DialogDescription>Référence {client.reference}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
+          <ClientTypeToggle
+            value={form.type}
+            onChange={(t) => setForm({ ...form, type: t })}
+            disabled={isSubmitting}
+          />
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="edit-firstName">Prénom</Label>
