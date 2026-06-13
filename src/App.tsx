@@ -5,7 +5,7 @@ import { api } from '../convex/_generated/api'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
 import { DashboardLayout, type Page } from '@/components/layout'
-import { DashboardPage, SalesPage, StockPage, ReportsPage, AdminPage, SafePage, ClientsPage } from '@/pages'
+import { DashboardPage, SalesPage, StockPage, ReportsPage, AdminPage, SafePage, ClientsPage, AssistantPage } from '@/pages'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Clock, UserCheck } from 'lucide-react'
@@ -285,6 +285,8 @@ function AuthenticatedApp() {
         return <SalesPage />
       case 'clients':
         return <ClientsPage />
+      case 'assistant':
+        return <AssistantPage />
       case 'stock':
         return <StockPage />
       case 'reports':

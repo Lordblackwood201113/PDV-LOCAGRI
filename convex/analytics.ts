@@ -1,0 +1,389 @@
+import { v } from "convex/values";
+import { query } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
+
+// ============================================
+// AGRÉGATIONS (outils lecture seule pour l'assistant IA + rapports)
+// Accès : admin/manager (le caissier reçoit null).
+// ============================================
+
+async function requireStaff(ctx: QueryCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) return null;
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+    .unique();
+  if (!user || user.role === "cashier") return null;
+  return user;
+}
+
+function startTs(dateStr: string): number {
+  return new Date(dateStr + "T00:00:00").getTime();
+}
+function endTs(dateStr: string): number {
+  return new Date(dateStr + "T23:59:59.999").getTime();
+}
+
+/**
+ * Chiffre d'affaires agrégé sur une période arbitraire (bornes incluses).
+ */
+export const getSalesSummaryByPeriod = query({
+  args: {
+    startDate: v.string(),
+    endDate: v.string(),
+    productId: v.optional(v.id("products")),
+  },
+  handler: async (ctx, args) => {
+    if (!(await requireStaff(ctx))) return null;
+
+    const start = startTs(args.startDate);
+    const end = endTs(args.endDate);
+
+    let sales = await ctx.db
+      .query("sales")
+      .withIndex("by_date")
+      .filter((q) => q.and(q.gte(q.field("date"), start), q.lte(q.field("date"), end)))
+      .collect();
+    if (args.productId) sales = sales.filter((s) => s.productId === args.productId);
+
+    const sum = (arr: typeof sales) => arr.reduce((s, x) => s + x.total, 0);
+    const cash = sales.filter((s) => s.paymentMethod === "cash");
+    const mobile = sales.filter((s) => s.paymentMethod === "mobile_money");
+    const credit = sales.filter((s) => s.paymentMethod === "credit");
+
+    const dayMap = new Map<string, { amount: number; count: number }>();
+    for (const s of sales) {
+      const d = new Date(s.date).toISOString().split("T")[0];
+      const cur = dayMap.get(d) ?? { amount: 0, count: 0 };
+      cur.amount += s.total;
+      cur.count += 1;
+      dayMap.set(d, cur);
+    }
+    const byDay = Array.from(dayMap.entries())
+      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+      .map(([date, v2]) => ({ date, amount: v2.amount, count: v2.count }));
+
+    return {
+      period: { startDate: args.startDate, endDate: args.endDate },
+      totalAmount: sum(sales),
+      totalQuantity: sales.reduce((s, x) => s + x.quantity, 0),
+      salesCount: sales.length,
+      byMethod: {
+        cash: { amount: sum(cash), count: cash.length },
+        mobile_money: { amount: sum(mobile), count: mobile.length },
+        credit: { amount: sum(credit), count: credit.length },
+      },
+      byDay,
+    };
+  },
+});
+
+/**
+ * Classement des meilleurs produits par CA (et quantité) sur une période.
+ */
+export const getTopProductsBySales = query({
+  args: {
+    startDate: v.string(),
+    endDate: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    if (!(await requireStaff(ctx))) return [];
+
+    const start = startTs(args.startDate);
+    const end = endTs(args.endDate);
+    const sales = await ctx.db
+      .query("sales")
+      .withIndex("by_date")
+      .filter((q) => q.and(q.gte(q.field("date"), start), q.lte(q.field("date"), end)))
+      .collect();
+
+    const map = new Map<string, { productId: string; name: string; quantity: number; amount: number }>();
+    for (const s of sales) {
+      const key = s.productId ?? "legacy";
+      const cur = map.get(key) ?? {
+        productId: key,
+        name: s.productName ?? "Produit",
+        quantity: 0,
+        amount: 0,
+      };
+      cur.quantity += s.quantity;
+      cur.amount += s.total;
+      map.set(key, cur);
+    }
+    const limit = Math.min(args.limit ?? 10, 50);
+    return Array.from(map.values())
+      .sort((a, b) => b.amount - a.amount || b.quantity - a.quantity)
+      .slice(0, limit);
+  },
+});
+
+/**
+ * Total d'achats d'un client + ventilation payé/crédit/encours.
+ */
+export const getSalesByClient = query({
+  args: {
+    clientId: v.id("clients"),
+    startDate: v.optional(v.string()),
+    endDate: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (!(await requireStaff(ctx))) return null;
+
+    let sales = await ctx.db
+      .query("sales")
+      .withIndex("by_client", (q) => q.eq("clientId", args.clientId))
+      .collect();
+    if (args.startDate) {
+      const s = startTs(args.startDate);
+      sales = sales.filter((x) => x.date >= s);
+    }
+    if (args.endDate) {
+      const e = endTs(args.endDate);
+      sales = sales.filter((x) => x.date <= e);
+    }
+
+    const credit = sales.filter((s) => s.paymentMethod === "credit");
+    const paid = sales.filter((s) => s.paymentMethod !== "credit");
+
+    const byProduct = new Map<string, { name: string; quantity: number; amount: number }>();
+    for (const s of sales) {
+      const key = s.productId ?? "legacy";
+      const cur = byProduct.get(key) ?? { name: s.productName ?? "Produit", quantity: 0, amount: 0 };
+      cur.quantity += s.quantity;
+      cur.amount += s.total;
+      byProduct.set(key, cur);
+    }
+
+    return {
+      totalAmount: sales.reduce((s, x) => s + x.total, 0),
+      purchaseCount: sales.length,
+      totalQuantity: sales.reduce((s, x) => s + x.quantity, 0),
+      paidAmount: paid.reduce((s, x) => s + x.total, 0),
+      creditAmount: credit.reduce((s, x) => s + x.total, 0),
+      outstandingAmount: credit.reduce((s, x) => s + (x.amountDue ?? x.total), 0),
+      byProduct: Array.from(byProduct.values()).sort((a, b) => b.amount - a.amount),
+    };
+  },
+});
+
+/**
+ * Rapport des écarts de caisse (sessions clôturées avec écart) sur une période.
+ */
+export const getCashDiscrepancyReport = query({
+  args: {
+    startDate: v.optional(v.string()),
+    endDate: v.optional(v.string()),
+    userId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (!(await requireStaff(ctx))) return null;
+
+    let sessions = await ctx.db
+      .query("cashSessions")
+      .withIndex("by_date")
+      .order("desc")
+      .collect();
+    sessions = sessions.filter((s) => s.status === "closed");
+    // cashSessions.date est "YYYY-MM-DD" → comparaison lexicographique OK
+    if (args.startDate) sessions = sessions.filter((s) => s.date >= args.startDate!);
+    if (args.endDate) sessions = sessions.filter((s) => s.date <= args.endDate!);
+    if (args.userId) sessions = sessions.filter((s) => s.userId === args.userId);
+
+    const withDisc = sessions.filter((s) => (s.discrepancy ?? 0) !== 0);
+
+    const byCashier = new Map<
+      string,
+      { userId: string; userName: string; sessionsCount: number; totalDiscrepancy: number; maxAbsDiscrepancy: number }
+    >();
+    for (const s of withDisc) {
+      const d = s.discrepancy ?? 0;
+      const cur = byCashier.get(s.userId) ?? {
+        userId: s.userId,
+        userName: s.userName,
+        sessionsCount: 0,
+        totalDiscrepancy: 0,
+        maxAbsDiscrepancy: 0,
+      };
+      cur.sessionsCount += 1;
+      cur.totalDiscrepancy += d;
+      cur.maxAbsDiscrepancy = Math.max(cur.maxAbsDiscrepancy, Math.abs(d));
+      byCashier.set(s.userId, cur);
+    }
+
+    return {
+      totalDiscrepancy: withDisc.reduce((sum, s) => sum + (s.discrepancy ?? 0), 0),
+      sessionsWithDiscrepancyCount: withDisc.length,
+      totalSessions: sessions.length,
+      byCashier: Array.from(byCashier.values()),
+      sessions: withDisc.slice(0, 100).map((s) => ({
+        date: s.date,
+        userName: s.userName,
+        closingAmount: s.closingAmount,
+        expectedAmount: s.expectedAmount,
+        discrepancy: s.discrepancy,
+        discrepancyReason: s.discrepancyReason,
+      })),
+    };
+  },
+});
+
+/**
+ * Total et détail des dépenses sur une période (par catégorie et statut).
+ */
+export const getExpensesSummaryByPeriod = query({
+  args: {
+    startDate: v.optional(v.string()),
+    endDate: v.optional(v.string()),
+    category: v.optional(
+      v.union(
+        v.literal("fournitures"),
+        v.literal("transport"),
+        v.literal("maintenance"),
+        v.literal("autre")
+      )
+    ),
+    status: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("approved"),
+        v.literal("rejected"),
+        v.literal("withdrawn")
+      )
+    ),
+  },
+  handler: async (ctx, args) => {
+    if (!(await requireStaff(ctx))) return null;
+
+    let expenses = await ctx.db
+      .query("expenses")
+      .withIndex("by_date")
+      .order("desc")
+      .collect();
+    if (args.startDate) {
+      const s = startTs(args.startDate);
+      expenses = expenses.filter((e) => e.date >= s);
+    }
+    if (args.endDate) {
+      const e2 = endTs(args.endDate);
+      expenses = expenses.filter((e) => e.date <= e2);
+    }
+    if (args.category) expenses = expenses.filter((e) => e.category === args.category);
+    if (args.status) expenses = expenses.filter((e) => e.status === args.status);
+
+    const byCategory = new Map<string, { category: string; total: number; count: number }>();
+    const byStatus = new Map<string, { status: string; total: number; count: number }>();
+    for (const e of expenses) {
+      const c = byCategory.get(e.category) ?? { category: e.category, total: 0, count: 0 };
+      c.total += e.amount;
+      c.count += 1;
+      byCategory.set(e.category, c);
+      const st = byStatus.get(e.status) ?? { status: e.status, total: 0, count: 0 };
+      st.total += e.amount;
+      st.count += 1;
+      byStatus.set(e.status, st);
+    }
+
+    return {
+      total: expenses.reduce((s, e) => s + e.amount, 0),
+      count: expenses.length,
+      byCategory: Array.from(byCategory.values()),
+      byStatus: Array.from(byStatus.values()),
+    };
+  },
+});
+
+/**
+ * Point consolidé de la journée (pour "fais-moi le point").
+ */
+export const getBusinessDashboard = query({
+  args: { date: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    if (!(await requireStaff(ctx))) return null;
+
+    const dayStr = args.date ?? new Date().toISOString().split("T")[0];
+    const start = startTs(dayStr);
+    const end = endTs(dayStr);
+
+    // Ventes du jour
+    const sales = await ctx.db
+      .query("sales")
+      .withIndex("by_date")
+      .filter((q) => q.and(q.gte(q.field("date"), start), q.lte(q.field("date"), end)))
+      .collect();
+    const sum = (arr: typeof sales) => arr.reduce((s, x) => s + x.total, 0);
+    const cash = sales.filter((s) => s.paymentMethod === "cash");
+    const mobile = sales.filter((s) => s.paymentMethod === "mobile_money");
+    const credit = sales.filter((s) => s.paymentMethod === "credit");
+
+    // Coffre
+    const safe = await ctx.db.query("safe").first();
+
+    // Créances
+    const activeClients = await ctx.db
+      .query("clients")
+      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .collect();
+    const debtors = activeClients.filter((c) => (c.balance ?? 0) > 0);
+
+    // Stock bas
+    const products = (await ctx.db.query("products").collect()).filter(
+      (p) => p.isActive !== false
+    );
+    const lowStock = products.filter((p) => p.stockQuantity <= p.alertThreshold);
+
+    // Sessions ouvertes
+    const openSessions = await ctx.db
+      .query("cashSessions")
+      .withIndex("by_status", (q) => q.eq("status", "open"))
+      .collect();
+
+    // En attente
+    const pendingFund = await ctx.db
+      .query("cashFundRequests")
+      .withIndex("by_status", (q) => q.eq("status", "pending"))
+      .collect();
+    const pendingDep = await ctx.db
+      .query("pendingDeposits")
+      .withIndex("by_status", (q) => q.eq("status", "pending"))
+      .collect();
+    const pendingExp = await ctx.db
+      .query("expenses")
+      .withIndex("by_status", (q) => q.eq("status", "pending"))
+      .collect();
+
+    return {
+      date: dayStr,
+      day: {
+        salesAmount: sum(sales),
+        salesCount: sales.length,
+        byMethod: {
+          cash: sum(cash),
+          mobile_money: sum(mobile),
+          credit: sum(credit),
+        },
+      },
+      safeBalance: safe?.currentBalance ?? null,
+      openSessionsCount: openSessions.length,
+      receivables: {
+        total: debtors.reduce((s, c) => s + (c.balance ?? 0), 0),
+        debtorCount: debtors.length,
+      },
+      lowStock: {
+        count: lowStock.length,
+        items: lowStock.slice(0, 20).map((p) => ({
+          name: p.name,
+          stock: p.stockQuantity,
+          threshold: p.alertThreshold,
+          unit: p.unit ?? "sac",
+        })),
+      },
+      pending: {
+        fundRequests: pendingFund.length,
+        deposits: pendingDep.length,
+        expenses: pendingExp.length,
+      },
+    };
+  },
+});

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { writeAuditLog } from "./audit";
 
 // ============================================
 // HELPERS
@@ -562,6 +563,17 @@ export const approveExpense = mutation({
       approvedAt: now,
     });
 
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: user.name, role: user.role },
+      action: "expense.approved",
+      category: "expense",
+      summary: `Dépense approuvée : ${expense.amount} FCFA — ${expense.reason} (demandée par ${expense.requesterName})`,
+      targetType: "expense",
+      targetId: args.expenseId,
+      before: "pending",
+      after: "approved",
+    });
+
     return {
       expenseId: args.expenseId,
       status: "approved",
@@ -612,6 +624,17 @@ export const rejectExpense = mutation({
       approvedByName: user.name,
       approvedAt: Date.now(),
       rejectionReason: args.rejectionReason.trim(),
+    });
+
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: user.name, role: user.role },
+      action: "expense.rejected",
+      category: "expense",
+      summary: `Dépense rejetée : ${expense.amount} FCFA — motif rejet : ${args.rejectionReason.trim()}`,
+      targetType: "expense",
+      targetId: args.expenseId,
+      before: "pending",
+      after: "rejected",
     });
 
     return {
@@ -680,6 +703,17 @@ export const withdrawExpense = mutation({
       status: "withdrawn",
       withdrawnAt: now,
       withdrawnFromSessionId: session._id,
+    });
+
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: user.name, role: user.role },
+      action: "expense.withdrawn",
+      category: "expense",
+      summary: `Dépense retirée de la caisse : ${expense.amount} FCFA — ${expense.reason}`,
+      targetType: "expense",
+      targetId: args.expenseId,
+      before: "approved",
+      after: "withdrawn",
     });
 
     return {

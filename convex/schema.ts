@@ -10,7 +10,9 @@ export default defineSchema({
       v.literal("product"),
       v.literal("client"),
       v.literal("sale"),
-      v.literal("movement")
+      v.literal("movement"),
+      v.literal("payment"),
+      v.literal("log")
     ),
     date: v.optional(v.string()),   // Format "YYYYMMDD" pour les compteurs quotidiens (sale, movement)
     count: v.number(),              // Dernier numéro utilisé
@@ -29,6 +31,7 @@ export default defineSchema({
     email: v.optional(v.string()),      // Email (optionnel)
     quartier: v.optional(v.string()),   // Quartier de résidence (optionnel)
     notes: v.optional(v.string()),      // Notes sur le client
+    balance: v.optional(v.number()),    // Encours (total dû) — crédit/ardoise, défaut 0
     createdAt: v.number(),          // Date de création
     createdById: v.string(),        // ID de l'utilisateur qui a créé
     createdByName: v.string(),      // Nom (dénormalisé)
@@ -41,6 +44,30 @@ export default defineSchema({
       searchField: "lastName",
       filterFields: ["isActive"],
     }),
+
+  // ============================================
+  // RÈGLEMENTS CLIENTS (remboursements de crédit)
+  // ============================================
+  clientPayments: defineTable({
+    reference: v.string(),           // Code unique: REG-YYYYMMDD-XXXXX
+    clientId: v.id("clients"),
+    clientReference: v.string(),     // Référence client (dénormalisé)
+    clientName: v.string(),          // Nom client (dénormalisé)
+    amount: v.number(),              // Montant du règlement
+    method: v.union(                 // Moyen de règlement
+      v.literal("cash"),
+      v.literal("mobile_money")
+    ),
+    date: v.number(),                // Timestamp
+    userId: v.string(),              // Caissier qui encaisse
+    userName: v.string(),            // Nom (dénormalisé)
+    sessionId: v.optional(v.id("cashSessions")), // Session de caisse (règlement espèces)
+    note: v.optional(v.string()),    // Note éventuelle
+    balanceAfter: v.number(),        // Encours du client après ce règlement (audit)
+  })
+    .index("by_client", ["clientId"])
+    .index("by_date", ["date"])
+    .index("by_session", ["sessionId"]),
 
   // ============================================
   // PRODUITS (catalogue multi-produits)
@@ -75,8 +102,20 @@ export default defineSchema({
     total: v.number(),             // Montant total
     paymentMethod: v.union(
       v.literal("cash"),
-      v.literal("mobile_money")
+      v.literal("mobile_money"),
+      v.literal("credit")          // Vente à crédit (ardoise)
     ),
+    // Crédit (vente à terme — tout ou rien)
+    paymentStatus: v.optional(v.union(v.literal("paid"), v.literal("unpaid"))),
+    amountDue: v.optional(v.number()), // Reste dû sur cette vente à crédit (0 si soldée)
+    // Encaissement & rendu de monnaie (optionnels — rétro-compat)
+    amountReceived: v.optional(v.number()),   // Espèces remises par le client (vente espèces)
+    changeDue: v.optional(v.number()),        // Monnaie à rendre = amountReceived - total (>= 0)
+    changeMethod: v.optional(v.union(         // Moyen de rendu (présent seulement si changeDue > 0)
+      v.literal("cash"),
+      v.literal("mobile_money")
+    )),
+    mobileMoneyChange: v.optional(v.number()), // Part de la monnaie rendue via Mobile Money (0 sinon)
     // Client (optionnel)
     clientId: v.optional(v.id("clients")),     // Référence au client
     clientReference: v.optional(v.string()),   // Référence client (dénormalisé)
@@ -141,10 +180,13 @@ export default defineSchema({
     // Statistiques de la session (calculées à la clôture)
     totalCashSales: v.optional(v.number()),   // Total ventes espèces
     totalMobileSales: v.optional(v.number()), // Total ventes Mobile Money
+    totalMobileChangeGiven: v.optional(v.number()), // Monnaie rendue via Mobile Money (espèces gardées en caisse)
+    totalCashRepayments: v.optional(v.number()), // Règlements clients en espèces (entrées en caisse)
     salesCount: v.optional(v.number()),       // Nombre de ventes
     reopenedAt: v.optional(v.number()),       // Timestamp de réouverture (si réouverte)
   })
     .index("by_user_date", ["userId", "date"])
+    .index("by_user_status", ["userId", "status"])
     .index("by_status", ["status"])
     .index("by_date", ["date"]),
 
@@ -264,6 +306,77 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_requester", ["requesterId"])
     .index("by_date", ["date"]),
+
+  // ============================================
+  // JOURNAL D'AUDIT (actions sensibles)
+  // ============================================
+  auditLogs: defineTable({
+    reference: v.string(),           // Code unique: LOG-YYYYMMDD-XXXXX
+    date: v.number(),                // Timestamp de l'action
+    actorId: v.string(),             // ID Clerk de l'auteur
+    actorName: v.string(),           // Nom (dénormalisé)
+    actorRole: v.string(),           // Rôle au moment de l'action
+    action: v.string(),              // Clé typée (ex. "user.role_changed")
+    category: v.union(
+      v.literal("user"),
+      v.literal("safe"),
+      v.literal("expense"),
+      v.literal("session"),
+      v.literal("stock"),
+      v.literal("product"),
+      v.literal("client")
+    ),
+    summary: v.string(),             // Description lisible (FR)
+    targetType: v.optional(v.string()),  // Type d'entité ciblée
+    targetId: v.optional(v.string()),    // ID de l'entité ciblée
+    targetRef: v.optional(v.string()),   // Référence de l'entité (si applicable)
+    targetName: v.optional(v.string()),  // Nom de l'entité (dénormalisé)
+    before: v.optional(v.string()),  // Valeur avant (rôle, prix, solde, statut...)
+    after: v.optional(v.string()),   // Valeur après
+    metadata: v.optional(v.string()), // Contexte additionnel (JSON)
+  })
+    .index("by_date", ["date"])
+    .index("by_actor", ["actorId"])
+    .index("by_category", ["category"])
+    .index("by_reference", ["reference"]),
+
+  // ============================================
+  // ASSISTANT IA — conversations & messages (admin)
+  // ============================================
+  assistantConversations: defineTable({
+    userId: v.string(),              // clerkId de l'admin propriétaire
+    title: v.optional(v.string()),   // résumé auto (1er message)
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    lastMessageAt: v.optional(v.number()),
+    messageCount: v.optional(v.number()),
+    model: v.optional(v.string()),   // modèle utilisé (ex. deepseek-chat)
+    archived: v.optional(v.boolean()),
+  })
+    .index("by_user_updated", ["userId", "updatedAt"])
+    .index("by_user", ["userId"]),
+
+  assistantMessages: defineTable({
+    conversationId: v.id("assistantConversations"),
+    userId: v.string(),              // dénormalisé (sécurité/filtre)
+    role: v.union(
+      v.literal("user"),
+      v.literal("assistant"),
+      v.literal("tool"),
+      v.literal("system")
+    ),
+    content: v.string(),             // texte ; pour role "tool" = JSON tronqué
+    toolCalls: v.optional(v.string()),   // JSON des tool_calls (assistant), pour rejouer
+    toolCallId: v.optional(v.string()),  // pour role "tool"
+    toolName: v.optional(v.string()),    // nom de l'outil appelé
+    createdAt: v.number(),
+    tokensPrompt: v.optional(v.number()),
+    tokensCompletion: v.optional(v.number()),
+    latencyMs: v.optional(v.number()),
+    errorCode: v.optional(v.string()),
+  })
+    .index("by_conversation", ["conversationId", "createdAt"])
+    .index("by_user", ["userId"]),
 
   // ============================================
   // UTILISATEURS (synchronisés avec Clerk)

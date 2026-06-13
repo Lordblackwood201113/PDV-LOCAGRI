@@ -1,5 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
+import { writeAuditLog } from "./audit";
 
 // ============================================
 // HELPERS
@@ -14,17 +17,91 @@ function getTodayDateString(): string {
 }
 
 /**
- * Obtenir le début du jour (minuit) en timestamp
+ * Récupérer la session OUVERTE d'un utilisateur, quelle que soit sa date.
+ * (Une seule session ouverte par caissier — voir openSession.)
  */
-function getStartOfDay(dateString: string): number {
-  return new Date(dateString + "T00:00:00").getTime();
+async function getOpenSessionForUser(
+  ctx: QueryCtx,
+  userId: string
+): Promise<Doc<"cashSessions"> | null> {
+  // .first() (et non .unique()) comme filet de sécurité si des données héritées
+  // contenaient plusieurs sessions ouvertes pour un même utilisateur.
+  return await ctx.db
+    .query("cashSessions")
+    .withIndex("by_user_status", (q) =>
+      q.eq("userId", userId).eq("status", "open")
+    )
+    .first();
 }
 
 /**
- * Obtenir la fin du jour (23:59:59) en timestamp
+ * Calculer les agrégats de réconciliation d'une session, sur SON intervalle réel
+ * (openedAt → closedAt/maintenant), et non sur la journée calendaire.
  */
-function getEndOfDay(dateString: string): number {
-  return new Date(dateString + "T23:59:59.999").getTime();
+async function computeSessionReconciliation(
+  ctx: QueryCtx,
+  session: Doc<"cashSessions">
+) {
+  const start = session.openedAt;
+  const end = session.closedAt ?? Date.now();
+
+  const allSales = await ctx.db
+    .query("sales")
+    .withIndex("by_date")
+    .filter((q) =>
+      q.and(
+        q.gte(q.field("date"), start),
+        q.lte(q.field("date"), end),
+        q.eq(q.field("userId"), session.userId)
+      )
+    )
+    .collect();
+
+  const cashSales = allSales.filter((s) => s.paymentMethod === "cash");
+  const totalCashSales = cashSales.reduce((sum, s) => sum + s.total, 0);
+  const mobileSales = allSales.filter((s) => s.paymentMethod === "mobile_money");
+  const totalMobileSales = mobileSales.reduce((sum, s) => sum + s.total, 0);
+  const totalMobileChangeGiven = allSales.reduce(
+    (sum, s) => sum + (s.mobileMoneyChange ?? 0),
+    0
+  );
+
+  const allWithdrawnExpenses = await ctx.db
+    .query("expenses")
+    .withIndex("by_status", (q) => q.eq("status", "withdrawn"))
+    .collect();
+  const sessionExpenses = allWithdrawnExpenses.filter(
+    (e) => e.withdrawnFromSessionId === session._id
+  );
+  const totalExpenses = sessionExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+  const sessionPayments = await ctx.db
+    .query("clientPayments")
+    .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+    .collect();
+  const totalCashRepayments = sessionPayments
+    .filter((p) => p.method === "cash")
+    .reduce((sum, p) => sum + p.amount, 0);
+
+  const expectedAmount =
+    session.openingAmount +
+    totalCashSales +
+    totalMobileChangeGiven +
+    totalCashRepayments -
+    totalExpenses;
+
+  return {
+    totalCashSales,
+    totalMobileSales,
+    totalMobileChangeGiven,
+    totalCashRepayments,
+    totalExpenses,
+    expectedAmount,
+    salesCount: allSales.length,
+    cashSalesCount: cashSales.length,
+    mobileSalesCount: mobileSales.length,
+    expensesCount: sessionExpenses.length,
+  };
 }
 
 // ============================================
@@ -42,8 +119,14 @@ export const getCurrentSession = query({
       return null;
     }
 
-    const today = getTodayDateString();
+    // Priorité à la session ouverte (persistante au-delà du jour)
+    const openSession = await getOpenSessionForUser(ctx, identity.subject);
+    if (openSession) {
+      return openSession;
+    }
 
+    // À défaut, la session du jour (état "clôturée du jour" / versement en attente)
+    const today = getTodayDateString();
     const session = await ctx.db
       .query("cashSessions")
       .withIndex("by_user_date", (q) =>
@@ -69,72 +152,23 @@ export const calculateExpectedAmount = query({
       return null;
     }
 
-    // Récupérer la session (soit par ID, soit la session du jour)
-    let session;
+    // Récupérer la session : par ID, sinon la session ouverte de l'utilisateur (peu importe le jour)
+    let session: Doc<"cashSessions"> | null;
     if (args.sessionId) {
       session = await ctx.db.get(args.sessionId);
     } else {
-      const today = getTodayDateString();
-      session = await ctx.db
-        .query("cashSessions")
-        .withIndex("by_user_date", (q) =>
-          q.eq("userId", identity.subject).eq("date", today)
-        )
-        .unique();
+      session = await getOpenSessionForUser(ctx, identity.subject);
     }
 
     if (!session) {
       return null;
     }
 
-    // Récupérer les ventes en espèces de la journée pour ce caissier
-    const startOfDay = getStartOfDay(session.date);
-    const endOfDay = getEndOfDay(session.date);
-
-    const allSales = await ctx.db
-      .query("sales")
-      .withIndex("by_date")
-      .filter((q) =>
-        q.and(
-          q.gte(q.field("date"), startOfDay),
-          q.lte(q.field("date"), endOfDay),
-          q.eq(q.field("userId"), session.userId)
-        )
-      )
-      .collect();
-
-    // Filtrer les ventes en espèces
-    const cashSales = allSales.filter((s) => s.paymentMethod === "cash");
-    const totalCashSales = cashSales.reduce((sum, s) => sum + s.total, 0);
-
-    // Ventes Mobile Money (pour info)
-    const mobileSales = allSales.filter((s) => s.paymentMethod === "mobile_money");
-    const totalMobileSales = mobileSales.reduce((sum, s) => sum + s.total, 0);
-
-    // Récupérer les dépenses retirées pour cette session
-    const allWithdrawnExpenses = await ctx.db
-      .query("expenses")
-      .withIndex("by_status", (q) => q.eq("status", "withdrawn"))
-      .collect();
-
-    const sessionExpenses = allWithdrawnExpenses.filter(
-      (e) => e.withdrawnFromSessionId === session._id
-    );
-    const totalExpenses = sessionExpenses.reduce((sum, e) => sum + e.amount, 0);
-
-    // Montant attendu = Ouverture + Ventes espèces - Dépenses retirées
-    const expectedAmount = session.openingAmount + totalCashSales - totalExpenses;
+    const recon = await computeSessionReconciliation(ctx, session);
 
     return {
       openingAmount: session.openingAmount,
-      totalCashSales,
-      totalMobileSales,
-      totalExpenses,
-      expectedAmount,
-      salesCount: allSales.length,
-      cashSalesCount: cashSales.length,
-      mobileSalesCount: mobileSales.length,
-      expensesCount: sessionExpenses.length,
+      ...recon,
     };
   },
 });
@@ -218,8 +252,14 @@ export const hasOpenSession = query({
       return { hasSession: false, status: null };
     }
 
-    const today = getTodayDateString();
+    // Une session ouverte (quel que soit le jour) prime
+    const openSession = await getOpenSessionForUser(ctx, identity.subject);
+    if (openSession) {
+      return { hasSession: true, status: openSession.status };
+    }
 
+    // Sinon, état du jour (clôturée du jour / versement en attente)
+    const today = getTodayDateString();
     const session = await ctx.db
       .query("cashSessions")
       .withIndex("by_user_date", (q) =>
@@ -273,20 +313,25 @@ export const openSession = mutation({
 
     const today = getTodayDateString();
 
-    // Vérifier qu'il n'y a pas déjà une session aujourd'hui
-    const existingSession = await ctx.db
+    // Bloquer s'il existe déjà une session OUVERTE (quel que soit le jour) :
+    // une caisse ne se ferme pas seule, elle doit être clôturée explicitement.
+    const openSession = await getOpenSessionForUser(ctx, identity.subject);
+    if (openSession) {
+      throw new Error(
+        `Une caisse est déjà ouverte depuis le ${openSession.date}. Clôturez-la avant d'en ouvrir une nouvelle.`
+      );
+    }
+
+    // Empêcher de rouvrir une caisse déjà clôturée le même jour (le caissier doit utiliser "rouvrir")
+    const todaySession = await ctx.db
       .query("cashSessions")
       .withIndex("by_user_date", (q) =>
         q.eq("userId", identity.subject).eq("date", today)
       )
       .unique();
 
-    if (existingSession) {
-      if (existingSession.status === "open") {
-        throw new Error("Une session de caisse est déjà ouverte pour aujourd'hui");
-      } else {
-        throw new Error("La caisse a déjà été clôturée pour aujourd'hui");
-      }
+    if (todaySession && todaySession.status === "closed") {
+      throw new Error("La caisse a déjà été clôturée pour aujourd'hui");
     }
 
     const now = Date.now();
@@ -299,6 +344,16 @@ export const openSession = mutation({
       openingAmount: args.openingAmount,
       openedAt: now,
       status: "open",
+    });
+
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: user.name, role: user.role },
+      action: "session.opened",
+      category: "session",
+      summary: `Ouverture de caisse — fond de ${args.openingAmount} FCFA`,
+      targetType: "cashSession",
+      targetId: sessionId,
+      after: String(args.openingAmount),
     });
 
     return {
@@ -328,58 +383,27 @@ export const closeSession = mutation({
       throw new Error("Le montant de clôture ne peut pas être négatif");
     }
 
-    const today = getTodayDateString();
-
-    // Récupérer la session du jour
-    const session = await ctx.db
-      .query("cashSessions")
-      .withIndex("by_user_date", (q) =>
-        q.eq("userId", identity.subject).eq("date", today)
-      )
-      .unique();
+    // Clôturer la session OUVERTE de l'utilisateur (persistante au-delà du jour)
+    const session = await getOpenSessionForUser(ctx, identity.subject);
 
     if (!session) {
-      throw new Error("Aucune session de caisse ouverte pour aujourd'hui");
+      throw new Error("Aucune session de caisse ouverte à clôturer");
     }
 
-    if (session.status === "closed") {
-      throw new Error("La session de caisse est déjà clôturée");
-    }
+    const actorUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
 
-    // Calculer le montant attendu
-    const startOfDay = getStartOfDay(session.date);
-    const endOfDay = getEndOfDay(session.date);
-
-    const allSales = await ctx.db
-      .query("sales")
-      .withIndex("by_date")
-      .filter((q) =>
-        q.and(
-          q.gte(q.field("date"), startOfDay),
-          q.lte(q.field("date"), endOfDay),
-          q.eq(q.field("userId"), session.userId)
-        )
-      )
-      .collect();
-
-    const cashSales = allSales.filter((s) => s.paymentMethod === "cash");
-    const totalCashSales = cashSales.reduce((sum, s) => sum + s.total, 0);
-    const mobileSales = allSales.filter((s) => s.paymentMethod === "mobile_money");
-    const totalMobileSales = mobileSales.reduce((sum, s) => sum + s.total, 0);
-
-    // Récupérer les dépenses retirées pour cette session
-    const allWithdrawnExpenses = await ctx.db
-      .query("expenses")
-      .withIndex("by_status", (q) => q.eq("status", "withdrawn"))
-      .collect();
-
-    const sessionExpenses = allWithdrawnExpenses.filter(
-      (e) => e.withdrawnFromSessionId === session._id
-    );
-    const totalExpenses = sessionExpenses.reduce((sum, e) => sum + e.amount, 0);
-
-    // Montant attendu = Ouverture + Ventes espèces - Dépenses retirées
-    const expectedAmount = session.openingAmount + totalCashSales - totalExpenses;
+    // Réconciliation sur l'intervalle réel de la session (openedAt → maintenant)
+    const {
+      totalCashSales,
+      totalMobileSales,
+      totalMobileChangeGiven,
+      totalCashRepayments,
+      salesCount,
+      expectedAmount,
+    } = await computeSessionReconciliation(ctx, session);
     const discrepancy = args.closingAmount - expectedAmount;
 
     // Vérifier la justification si écart
@@ -399,37 +423,54 @@ export const closeSession = mutation({
       status: "closed",
       totalCashSales,
       totalMobileSales,
-      salesCount: allSales.length,
+      totalMobileChangeGiven,
+      totalCashRepayments,
+      salesCount,
     });
 
     // Vérifier si le coffre est initialisé (système de coffre actif)
     const safe = await ctx.db.query("safe").first();
 
     // Si le coffre existe, créer un versement en attente
-    if (safe) {
-      // Récupérer l'utilisateur pour le nom
-      const user = await ctx.db
-        .query("users")
-        .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-        .unique();
-
-      if (user) {
-        await ctx.db.insert("pendingDeposits", {
-          cashierId: identity.subject,
-          cashierName: user.name,
-          sessionId: session._id,
-          expectedAmount: args.closingAmount, // Le montant déclaré à la clôture
-          closedAt: now,
-          status: "pending",
-        });
-      }
+    if (safe && actorUser) {
+      await ctx.db.insert("pendingDeposits", {
+        cashierId: identity.subject,
+        cashierName: actorUser.name,
+        sessionId: session._id,
+        expectedAmount: args.closingAmount, // Le montant déclaré à la clôture
+        closedAt: now,
+        status: "pending",
+      });
     }
+
+    await writeAuditLog(ctx, {
+      actor: {
+        id: identity.subject,
+        name: actorUser?.name ?? session.userName,
+        role: actorUser?.role ?? "cashier",
+      },
+      action: "session.closed",
+      category: "session",
+      summary:
+        `Clôture de caisse — déclaré ${args.closingAmount} FCFA, attendu ${expectedAmount} FCFA` +
+        (discrepancy !== 0 ? ` (écart ${discrepancy} FCFA)` : ""),
+      targetType: "cashSession",
+      targetId: session._id,
+      before: String(expectedAmount),
+      after: String(args.closingAmount),
+      metadata:
+        discrepancy !== 0
+          ? `ecart=${discrepancy}; motif=${args.discrepancyReason ?? ""}`
+          : undefined,
+    });
 
     return {
       sessionId: session._id,
       openingAmount: session.openingAmount,
       totalCashSales,
       totalMobileSales,
+      totalMobileChangeGiven,
+      totalCashRepayments,
       expectedAmount,
       closingAmount: args.closingAmount,
       discrepancy,
@@ -451,23 +492,30 @@ export const reopenSession = mutation({
       throw new Error("Non authentifié");
     }
 
-    const today = getTodayDateString();
-
-    // Récupérer la session du jour
+    // Récupérer la dernière session de l'utilisateur (peu importe le jour)
     const session = await ctx.db
       .query("cashSessions")
-      .withIndex("by_user_date", (q) =>
-        q.eq("userId", identity.subject).eq("date", today)
-      )
-      .unique();
+      .withIndex("by_user_date", (q) => q.eq("userId", identity.subject))
+      .order("desc")
+      .first();
 
     if (!session) {
-      throw new Error("Aucune session de caisse pour aujourd'hui");
+      throw new Error("Aucune session de caisse à rouvrir");
     }
 
     if (session.status === "open") {
       throw new Error("La session de caisse est déjà ouverte");
     }
+
+    const reopenActor = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    const reopenActorInfo = {
+      id: identity.subject,
+      name: reopenActor?.name ?? session.userName,
+      role: reopenActor?.role ?? "cashier",
+    };
 
     const now = Date.now();
 
@@ -502,6 +550,14 @@ export const reopenSession = mutation({
       // Le caissier devra redemander un fond de caisse
       if (depositedDeposit) {
         await ctx.db.delete(session._id);
+        await writeAuditLog(ctx, {
+          actor: reopenActorInfo,
+          action: "session.reopened",
+          category: "session",
+          summary: `Réouverture de caisse après versement confirmé — session ${session.date} supprimée, nouveau fond requis`,
+          targetType: "cashSession",
+          targetId: session._id,
+        });
         return {
           sessionId: null,
           reopenedAt: now,
@@ -523,6 +579,15 @@ export const reopenSession = mutation({
       totalMobileSales: undefined,
       salesCount: undefined,
       reopenedAt: now,
+    });
+
+    await writeAuditLog(ctx, {
+      actor: reopenActorInfo,
+      action: "session.reopened",
+      category: "session",
+      summary: `Réouverture de la caisse du ${session.date}`,
+      targetType: "cashSession",
+      targetId: session._id,
     });
 
     return {

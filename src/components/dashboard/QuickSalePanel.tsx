@@ -3,12 +3,12 @@ import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { Minus, Plus, Banknote, Smartphone, ShoppingBag } from 'lucide-react'
+import { Minus, Plus, Banknote, Smartphone, Notebook, ShoppingBag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { ClientSelector } from '@/components/clients'
 
-type PaymentMethod = 'cash' | 'mobile_money'
+type PaymentMethod = 'cash' | 'mobile_money' | 'credit'
 
 export function QuickSalePanel() {
   const [selectedProductId, setSelectedProductId] = useState<Id<'products'> | null>(null)
@@ -17,9 +17,16 @@ export function QuickSalePanel() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedClientId, setSelectedClientId] = useState<Id<'clients'> | null>(null)
   const [selectedClientName, setSelectedClientName] = useState<string | null>(null)
+  const [amountReceived, setAmountReceived] = useState<number | ''>('')
+  // La monnaie ne peut être rendue qu'en espèces ou Mobile Money (jamais "crédit")
+  const [changeMethod, setChangeMethod] = useState<'cash' | 'mobile_money'>('cash')
 
   const products = useQuery(api.products.getProducts)
   const createSale = useMutation(api.sales.createSale)
+  const selectedClient = useQuery(
+    api.clients.getClient,
+    selectedClientId ? { clientId: selectedClientId } : 'skip'
+  )
 
   // Sélectionner le premier produit par défaut
   useEffect(() => {
@@ -44,6 +51,13 @@ export function QuickSalePanel() {
   const handleSale = async () => {
     if (!product || !selectedProductId) return
 
+    const saleTotal = product.price * quantity
+    const received =
+      paymentMethod === 'cash' && typeof amountReceived === 'number' ? amountReceived : undefined
+    const changeBack = received !== undefined ? received - saleTotal : 0
+    const effectiveChangeMethod =
+      paymentMethod === 'cash' && changeBack > 0 ? changeMethod : undefined
+
     setIsSubmitting(true)
     try {
       const result = await createSale({
@@ -51,6 +65,8 @@ export function QuickSalePanel() {
         quantity,
         paymentMethod,
         clientId: selectedClientId ?? undefined,
+        amountReceived: received,
+        changeMethod: effectiveChangeMethod,
       })
 
       const clientSuffix = selectedClientName ? ` · ${selectedClientName}` : ''
@@ -58,6 +74,19 @@ export function QuickSalePanel() {
       toast.success('Vente enregistrée', {
         description: `${quantity} x ${result.productName} = ${formatPrice(result.total)} FCFA${clientSuffix}`,
       })
+
+      if (result.changeDue && result.changeDue > 0) {
+        const methodLabel = result.changeMethod === 'mobile_money' ? 'Mobile Money' : 'Espèces'
+        toast.info('Monnaie à rendre', {
+          description: `${formatPrice(result.changeDue)} FCFA · ${methodLabel}`,
+        })
+      }
+
+      if (result.isCredit && result.clientBalanceAfter !== undefined) {
+        toast.info('Vente à crédit', {
+          description: `${selectedClientName ?? 'Client'} doit maintenant ${formatPrice(result.clientBalanceAfter)} FCFA`,
+        })
+      }
 
       if (result.isLowStock) {
         toast.warning('Stock bas', {
@@ -68,6 +97,8 @@ export function QuickSalePanel() {
       setQuantity(1)
       setSelectedClientId(null)
       setSelectedClientName(null)
+      setAmountReceived('')
+      setChangeMethod('cash')
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erreur inconnue'
       toast.error('Erreur', { description: message })
@@ -85,7 +116,15 @@ export function QuickSalePanel() {
   }
 
   const total = product.price * quantity
-  const canSell = product.stockQuantity >= quantity && !isSubmitting
+  const changeDue =
+    paymentMethod === 'cash' && typeof amountReceived === 'number' ? amountReceived - total : 0
+  const insufficient =
+    paymentMethod === 'cash' && typeof amountReceived === 'number' && amountReceived < total
+  const cashPaymentReady =
+    paymentMethod !== 'cash' || (typeof amountReceived === 'number' && amountReceived >= total)
+  const creditReady = paymentMethod !== 'credit' || selectedClientId !== null
+  const canSell =
+    product.stockQuantity >= quantity && cashPaymentReady && creditReady && !isSubmitting
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
@@ -111,6 +150,7 @@ export function QuickSalePanel() {
                   onClick={() => {
                     setSelectedProductId(p._id)
                     setQuantity(1)
+                    setAmountReceived('')
                   }}
                   disabled={isSubmitting}
                   className={cn(
@@ -215,12 +255,12 @@ export function QuickSalePanel() {
           <label className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide">
             Paiement
           </label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <button
               onClick={() => setPaymentMethod('cash')}
               disabled={isSubmitting}
               className={cn(
-                'flex items-center justify-center gap-1.5 sm:gap-2 p-2.5 sm:p-3 rounded-lg border-2 transition-all',
+                'flex items-center justify-center gap-1.5 p-2.5 sm:p-3 rounded-lg border-2 transition-all',
                 paymentMethod === 'cash'
                   ? 'border-[#7ABE4E] bg-[#7ABE4E]/5 text-[#016124]'
                   : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
@@ -230,10 +270,13 @@ export function QuickSalePanel() {
               <span className="font-medium text-xs sm:text-sm">Espèces</span>
             </button>
             <button
-              onClick={() => setPaymentMethod('mobile_money')}
+              onClick={() => {
+                setPaymentMethod('mobile_money')
+                setAmountReceived('')
+              }}
               disabled={isSubmitting}
               className={cn(
-                'flex items-center justify-center gap-1.5 sm:gap-2 p-2.5 sm:p-3 rounded-lg border-2 transition-all',
+                'flex items-center justify-center gap-1.5 p-2.5 sm:p-3 rounded-lg border-2 transition-all',
                 paymentMethod === 'mobile_money'
                   ? 'border-[#CF761C] bg-[#CF761C]/5 text-[#CF761C]'
                   : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
@@ -242,8 +285,134 @@ export function QuickSalePanel() {
               <Smartphone className="w-4 h-4" />
               <span className="font-medium text-xs sm:text-sm">Mobile</span>
             </button>
+            <button
+              onClick={() => {
+                setPaymentMethod('credit')
+                setAmountReceived('')
+              }}
+              disabled={isSubmitting}
+              className={cn(
+                'flex items-center justify-center gap-1.5 p-2.5 sm:p-3 rounded-lg border-2 transition-all',
+                paymentMethod === 'credit'
+                  ? 'border-[#7C3AED] bg-[#7C3AED]/5 text-[#7C3AED]'
+                  : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
+              )}
+            >
+              <Notebook className="w-4 h-4" />
+              <span className="font-medium text-xs sm:text-sm">Crédit</span>
+            </button>
           </div>
+
+          {paymentMethod === 'credit' && (
+            <p className="text-xs text-[#CF761C] pt-1">
+              {!selectedClientId
+                ? 'Sélectionnez un client pour la vente à crédit.'
+                : (selectedClient?.balance ?? 0) > 0
+                  ? `Ce client doit déjà ${formatPrice(selectedClient?.balance ?? 0)} FCFA.`
+                  : null}
+            </p>
+          )}
         </div>
+
+        {/* Montant reçu & monnaie (paiement espèces uniquement) */}
+        {paymentMethod === 'cash' && (
+          <div className="space-y-2">
+            <label className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Montant reçu
+            </label>
+            <input
+              type="number"
+              inputMode="numeric"
+              value={amountReceived}
+              onChange={(e) =>
+                setAmountReceived(e.target.value === '' ? '' : Number(e.target.value))
+              }
+              placeholder={`Ex: ${total}`}
+              disabled={isSubmitting}
+              className="w-full h-10 sm:h-11 rounded-lg border border-gray-200 px-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#7ABE4E]/40"
+            />
+
+            {/* Raccourcis billets */}
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setAmountReceived(total)}
+                disabled={isSubmitting}
+                className="text-xs h-8 px-3 border border-gray-100"
+              >
+                Compte juste
+              </Button>
+              {[500, 1000, 2000, 5000, 10000].map((b) => (
+                <Button
+                  key={b}
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAmountReceived(b)}
+                  disabled={isSubmitting}
+                  className="text-xs h-8 px-3 border border-gray-100"
+                >
+                  {formatPrice(b)}
+                </Button>
+              ))}
+            </div>
+
+            {/* Monnaie à rendre */}
+            {typeof amountReceived === 'number' &&
+              (insufficient ? (
+                <p className="text-sm font-medium text-red-600">Montant insuffisant</p>
+              ) : (
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-gray-500 text-sm">Monnaie à rendre</span>
+                  <span className="text-xl sm:text-2xl font-bold text-[#016124]">
+                    {formatPrice(Math.max(0, changeDue))}{' '}
+                    <span className="text-xs font-normal text-gray-400">F</span>
+                  </span>
+                </div>
+              ))}
+
+            {/* Moyen de rendu de la monnaie */}
+            {changeDue > 0 && !insufficient && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  Rendre la monnaie en
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setChangeMethod('cash')}
+                    disabled={isSubmitting}
+                    className={cn(
+                      'flex items-center justify-center gap-1.5 p-2.5 rounded-lg border-2 transition-all',
+                      changeMethod === 'cash'
+                        ? 'border-[#7ABE4E] bg-[#7ABE4E]/5 text-[#016124]'
+                        : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
+                    )}
+                  >
+                    <Banknote className="w-4 h-4" />
+                    <span className="font-medium text-xs sm:text-sm">Espèces</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChangeMethod('mobile_money')}
+                    disabled={isSubmitting}
+                    className={cn(
+                      'flex items-center justify-center gap-1.5 p-2.5 rounded-lg border-2 transition-all',
+                      changeMethod === 'mobile_money'
+                        ? 'border-[#CF761C] bg-[#CF761C]/5 text-[#CF761C]'
+                        : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
+                    )}
+                  >
+                    <Smartphone className="w-4 h-4" />
+                    <span className="font-medium text-xs sm:text-sm">Mobile Money</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Total */}
         <div className="pt-3 sm:pt-4 border-t border-gray-100">

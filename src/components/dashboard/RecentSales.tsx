@@ -1,6 +1,6 @@
 import { useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
-import { Clock, Banknote, Smartphone } from 'lucide-react'
+import { Clock, Banknote, Smartphone, Notebook } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function RecentSales() {
@@ -73,16 +73,28 @@ export function RecentSales() {
                           </span>
                         </>
                       )}
+                      {sale.paymentMethod === 'credit' && (
+                        <>
+                          <span className="text-gray-300">·</span>
+                          <span className="text-[10px] sm:text-xs text-[#7C3AED] font-medium">à crédit</span>
+                        </>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                     <div className={cn(
                       'w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center',
-                      sale.paymentMethod === 'cash' ? 'bg-[#7ABE4E]/10' : 'bg-[#CF761C]/10'
+                      sale.paymentMethod === 'cash'
+                        ? 'bg-[#7ABE4E]/10'
+                        : sale.paymentMethod === 'credit'
+                          ? 'bg-[#7C3AED]/10'
+                          : 'bg-[#CF761C]/10'
                     )}>
                       {sale.paymentMethod === 'cash' ? (
                         <Banknote className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#016124]" />
+                      ) : sale.paymentMethod === 'credit' ? (
+                        <Notebook className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#7C3AED]" />
                       ) : (
                         <Smartphone className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#CF761C]" />
                       )}

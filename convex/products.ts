@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { writeAuditLog } from "./audit";
 
 // ============================================
 // QUERIES
@@ -211,6 +212,18 @@ export const addProduct = mutation({
       });
     }
 
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: user.name, role: user.role },
+      action: "product.created",
+      category: "product",
+      summary: `Produit créé : ${args.name.trim()} — prix ${args.price} FCFA, stock initial ${args.stockQuantity}`,
+      targetType: "product",
+      targetId: productId,
+      targetRef: productReference,
+      targetName: args.name.trim(),
+      after: String(args.price),
+    });
+
     return { productId, reference: productReference };
   },
 });
@@ -343,6 +356,22 @@ export const updateProduct = mutation({
       updatedAt: Date.now(),
     });
 
+    const priceChanged = product.price !== args.price;
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: user.name, role: user.role },
+      action: "product.updated",
+      category: "product",
+      summary: priceChanged
+        ? `Produit modifié : ${args.name.trim()} — prix ${product.price} → ${args.price} FCFA`
+        : `Produit modifié : ${args.name.trim()}`,
+      targetType: "product",
+      targetId: args.productId,
+      targetName: args.name.trim(),
+      ...(priceChanged
+        ? { before: String(product.price), after: String(args.price) }
+        : {}),
+    });
+
     return { success: true };
   },
 });
@@ -378,6 +407,18 @@ export const toggleProductActive = mutation({
     await ctx.db.patch(args.productId, {
       isActive: args.isActive,
       updatedAt: Date.now(),
+    });
+
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: user.name, role: user.role },
+      action: args.isActive ? "product.unarchived" : "product.archived",
+      category: "product",
+      summary: `Produit ${args.isActive ? "réactivé" : "archivé"} : ${product.name}`,
+      targetType: "product",
+      targetId: args.productId,
+      targetName: product.name,
+      before: args.isActive ? "archivé" : "actif",
+      after: args.isActive ? "actif" : "archivé",
     });
 
     return { success: true };
@@ -428,8 +469,23 @@ export const deleteProduct = mutation({
       await ctx.db.delete(movement._id);
     }
 
+    // Capturer les infos du produit AVANT suppression (pour le journal)
+    const deletedName = product.name;
+    const deletedRef = product.reference ?? String(args.productId);
+
     // Supprimer le produit
     await ctx.db.delete(args.productId);
+
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: user.name, role: user.role },
+      action: "product.deleted",
+      category: "product",
+      summary: `Produit supprimé : ${deletedName} (${deletedRef})`,
+      targetType: "product",
+      targetId: args.productId,
+      targetRef: deletedRef,
+      targetName: deletedName,
+    });
 
     return { success: true };
   },

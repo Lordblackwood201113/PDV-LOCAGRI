@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import {
   Users,
   UserPlus,
@@ -27,6 +28,10 @@ import {
   Phone,
   Mail,
   MapPin,
+  Wallet,
+  Banknote,
+  Smartphone,
+  HandCoins,
 } from 'lucide-react'
 
 type ClientDoc = {
@@ -38,6 +43,7 @@ type ClientDoc = {
   email?: string
   quartier?: string
   notes?: string
+  balance?: number
   isActive: boolean
   createdAt: number
   createdByName: string
@@ -51,11 +57,15 @@ export function ClientsPage() {
   // Dialogs
   const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<ClientDoc | null>(null)
+  const [payTarget, setPayTarget] = useState<ClientDoc | null>(null)
 
   const currentUser = useQuery(api.users.getCurrentUser)
   const clients = useQuery(api.clients.getClients, { includeInactive: showArchived })
+  const receivables = useQuery(api.clients.getReceivables)
 
   const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'manager'
+
+  const formatPrice = (amount: number) => new Intl.NumberFormat('fr-FR').format(amount)
 
   // Filtrage local par recherche
   const filteredClients = useMemo(() => {
@@ -117,6 +127,29 @@ export function ClientsPage() {
           </Button>
         </div>
 
+        {/* Récap des créances */}
+        {receivables && receivables.totalOutstanding > 0 && (
+          <Card className="border-[#CF761C]/30 bg-[#CF761C]/5">
+            <CardContent className="p-3 sm:p-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-full bg-[#CF761C]/15 flex items-center justify-center flex-shrink-0">
+                  <Wallet className="w-5 h-5 text-[#CF761C]" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">Total des créances</p>
+                  <p className="text-lg sm:text-xl font-bold text-[#CF761C]">
+                    {formatPrice(receivables.totalOutstanding)} FCFA
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground text-right flex-shrink-0">
+                {receivables.debtorCount} client{receivables.debtorCount > 1 ? 's' : ''} débiteur
+                {receivables.debtorCount > 1 ? 's' : ''}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Barre de recherche + filtre */}
         <Card>
           <CardContent className="p-3 sm:p-4">
@@ -169,7 +202,9 @@ export function ClientsPage() {
                     client={client as ClientDoc}
                     canEdit={canEdit}
                     onEdit={() => setEditTarget(client as ClientDoc)}
+                    onPay={() => setPayTarget(client as ClientDoc)}
                     formatDate={formatDate}
+                    formatPrice={formatPrice}
                   />
                 ))}
               </div>
@@ -186,6 +221,13 @@ export function ClientsPage() {
           onOpenChange={(open) => !open && setEditTarget(null)}
         />
       )}
+      {payTarget && (
+        <RecordPaymentDialog
+          client={payTarget}
+          open={!!payTarget}
+          onOpenChange={(open) => !open && setPayTarget(null)}
+        />
+      )}
     </div>
   )
 }
@@ -198,13 +240,18 @@ function ClientRow({
   client,
   canEdit,
   onEdit,
+  onPay,
   formatDate,
+  formatPrice,
 }: {
   client: ClientDoc
   canEdit: boolean
   onEdit: () => void
+  onPay: () => void
   formatDate: (t: number) => string
+  formatPrice: (n: number) => string
 }) {
+  const hasDebt = (client.balance ?? 0) > 0
   const deactivate = useMutation(api.clients.deactivateClient)
   const reactivate = useMutation(api.clients.reactivateClient)
   const [isToggling, setIsToggling] = useState(false)
@@ -244,6 +291,11 @@ function ClientRow({
                 Archivé
               </Badge>
             )}
+            {hasDebt && (
+              <Badge className="text-[10px] bg-[#CF761C]/10 text-[#CF761C] border border-[#CF761C]/30 hover:bg-[#CF761C]/10">
+                Doit {formatPrice(client.balance ?? 0)} FCFA
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
             {client.phone && (
@@ -267,41 +319,54 @@ function ClientRow({
           </p>
         </div>
       </div>
-      {canEdit && (
-        <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto">
+      <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto">
+        {hasDebt && (
           <Button
             size="sm"
-            variant="outline"
-            onClick={onEdit}
+            onClick={onPay}
             disabled={isToggling}
-            className="h-8"
+            className="h-8 bg-[#CF761C] hover:bg-[#CF761C]/90 text-white"
           >
-            <Pencil className="w-3.5 h-3.5 mr-1" />
-            Éditer
+            <HandCoins className="w-3.5 h-3.5 mr-1" />
+            Règlement
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleToggleActive}
-            disabled={isToggling}
-            className="h-8"
-          >
-            {isToggling ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : client.isActive ? (
-              <>
-                <Archive className="w-3.5 h-3.5 mr-1" />
-                Archiver
-              </>
-            ) : (
-              <>
-                <ArchiveRestore className="w-3.5 h-3.5 mr-1" />
-                Restaurer
-              </>
-            )}
-          </Button>
-        </div>
-      )}
+        )}
+        {canEdit && (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onEdit}
+              disabled={isToggling}
+              className="h-8"
+            >
+              <Pencil className="w-3.5 h-3.5 mr-1" />
+              Éditer
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleToggleActive}
+              disabled={isToggling}
+              className="h-8"
+            >
+              {isToggling ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : client.isActive ? (
+                <>
+                  <Archive className="w-3.5 h-3.5 mr-1" />
+                  Archiver
+                </>
+              ) : (
+                <>
+                  <ArchiveRestore className="w-3.5 h-3.5 mr-1" />
+                  Restaurer
+                </>
+              )}
+            </Button>
+          </>
+        )}
+      </div>
     </div>
   )
 }
@@ -603,6 +668,210 @@ function EditClientDialog({
               </span>
             ) : (
               'Enregistrer'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ============================================
+// Record payment dialog (règlement de créance)
+// ============================================
+
+function RecordPaymentDialog({
+  client,
+  open,
+  onOpenChange,
+}: {
+  client: ClientDoc
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const recordPayment = useMutation(api.clients.recordClientPayment)
+  const ledger = useQuery(api.clients.getClientLedger, { clientId: client._id })
+  const [amount, setAmount] = useState<number | ''>('')
+  const [method, setMethod] = useState<'cash' | 'mobile_money'>('cash')
+  const [note, setNote] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const balance = ledger?.client.balance ?? client.balance ?? 0
+  const formatPrice = (n: number) => new Intl.NumberFormat('fr-FR').format(n)
+  const formatDate = (t: number) =>
+    new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+
+  const invalid = typeof amount !== 'number' || amount <= 0 || amount > balance
+
+  const handleSubmit = async () => {
+    if (typeof amount !== 'number' || invalid) return
+    setIsSubmitting(true)
+    try {
+      const result = await recordPayment({
+        clientId: client._id,
+        amount,
+        method,
+        note: note.trim() || undefined,
+      })
+      toast.success('Règlement enregistré', {
+        description: `${formatPrice(amount)} FCFA · Reste dû: ${formatPrice(result.balanceAfter)} FCFA`,
+      })
+      onOpenChange(false)
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Erreur inconnue'
+      toast.error('Erreur', { description: msg })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[440px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <HandCoins className="w-5 h-5 text-[#CF761C]" />
+            Encaisser un règlement
+          </DialogTitle>
+          <DialogDescription>
+            {client.displayName} · {client.reference}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {/* Encours */}
+          <div className="flex items-center justify-between p-3 rounded-lg bg-[#CF761C]/5 border border-[#CF761C]/20">
+            <span className="text-sm text-muted-foreground">Encours actuel</span>
+            <span className="text-lg font-bold text-[#CF761C]">{formatPrice(balance)} FCFA</span>
+          </div>
+
+          {/* Montant */}
+          <div className="space-y-2">
+            <Label htmlFor="pay-amount">Montant du règlement (FCFA)</Label>
+            <Input
+              id="pay-amount"
+              type="number"
+              inputMode="numeric"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
+              placeholder={`Max: ${balance}`}
+              disabled={isSubmitting}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-xs h-7 px-2 border border-gray-100"
+              onClick={() => setAmount(balance)}
+              disabled={isSubmitting}
+            >
+              Solder ({formatPrice(balance)})
+            </Button>
+            {typeof amount === 'number' && amount > balance && (
+              <p className="text-xs text-red-600">Le montant dépasse l'encours.</p>
+            )}
+          </div>
+
+          {/* Méthode */}
+          <div className="space-y-2">
+            <Label>Moyen de règlement</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setMethod('cash')}
+                disabled={isSubmitting}
+                className={cn(
+                  'flex items-center justify-center gap-1.5 p-2.5 rounded-lg border-2 transition-all',
+                  method === 'cash'
+                    ? 'border-[#7ABE4E] bg-[#7ABE4E]/5 text-[#016124]'
+                    : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
+                )}
+              >
+                <Banknote className="w-4 h-4" />
+                <span className="font-medium text-xs sm:text-sm">Espèces</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMethod('mobile_money')}
+                disabled={isSubmitting}
+                className={cn(
+                  'flex items-center justify-center gap-1.5 p-2.5 rounded-lg border-2 transition-all',
+                  method === 'mobile_money'
+                    ? 'border-[#CF761C] bg-[#CF761C]/5 text-[#CF761C]'
+                    : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
+                )}
+              >
+                <Smartphone className="w-4 h-4" />
+                <span className="font-medium text-xs sm:text-sm">Mobile Money</span>
+              </button>
+            </div>
+            {method === 'cash' && (
+              <p className="text-[10px] text-muted-foreground">
+                Nécessite une caisse ouverte ; entre dans votre caisse du jour.
+              </p>
+            )}
+          </div>
+
+          {/* Note */}
+          <div className="space-y-2">
+            <Label htmlFor="pay-note">Note (optionnel)</Label>
+            <Input
+              id="pay-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Remarque..."
+              disabled={isSubmitting}
+            />
+          </div>
+
+          {/* Ardoise compacte */}
+          {ledger && (ledger.creditSales.length > 0 || ledger.payments.length > 0) && (
+            <div className="space-y-1.5 max-h-40 overflow-auto rounded-lg border border-gray-100 p-2">
+              <p className="text-[10px] uppercase tracking-wide text-gray-400 font-medium">
+                Ardoise récente
+              </p>
+              {ledger.creditSales.slice(0, 4).map((s) => (
+                <div key={s._id} className="flex items-center justify-between text-xs">
+                  <span className="text-gray-600 truncate">
+                    {formatDate(s.date)} · {s.productName}
+                    {s.paymentStatus === 'paid' && <span className="text-[#016124]"> · soldé</span>}
+                  </span>
+                  <span className="text-gray-900 tabular-nums">
+                    {s.paymentStatus === 'paid' ? formatPrice(s.total) : formatPrice(s.amountDue)} F
+                  </span>
+                </div>
+              ))}
+              {ledger.payments.slice(0, 4).map((p) => (
+                <div key={p._id} className="flex items-center justify-between text-xs">
+                  <span className="text-[#016124] truncate">
+                    {formatDate(p.date)} · Règlement {p.method === 'cash' ? 'espèces' : 'Mobile'}
+                  </span>
+                  <span className="text-[#016124] tabular-nums">−{formatPrice(p.amount)} F</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+            Annuler
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || invalid}
+            className="bg-[#CF761C] hover:bg-[#CF761C]/90 text-white"
+          >
+            {isSubmitting ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Enregistrement...
+              </span>
+            ) : (
+              <>
+                <HandCoins className="w-4 h-4 mr-2" />
+                Encaisser
+              </>
             )}
           </Button>
         </DialogFooter>

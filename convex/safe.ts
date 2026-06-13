@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { writeAuditLog } from "./audit";
 
 // ============================================
 // QUERIES
@@ -338,6 +339,16 @@ export const initializeSafe = mutation({
       date: now,
     });
 
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: user.name, role: user.role },
+      action: "safe.initialized",
+      category: "safe",
+      summary: `Initialisation du coffre : ${args.initialBalance} FCFA`,
+      targetType: "safe",
+      targetId: safeId,
+      after: String(args.initialBalance),
+    });
+
     return { safeId, balance: args.initialBalance };
   },
 });
@@ -399,6 +410,18 @@ export const adjustSafe = mutation({
       performedByName: user.name,
       reason: args.reason.trim(),
       date: now,
+    });
+
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: user.name, role: user.role },
+      action: "safe.adjusted",
+      category: "safe",
+      summary: `Ajustement du coffre : ${safe.currentBalance} → ${newBalance} FCFA, motif : ${args.reason.trim()}`,
+      targetType: "safe",
+      targetId: safe._id,
+      before: String(safe.currentBalance),
+      after: String(newBalance),
+      metadata: args.reason.trim(),
     });
 
     return { previousBalance: safe.currentBalance, newBalance };
@@ -512,6 +535,19 @@ export const approveFundRequest = mutation({
       throw new Error("Le coffre n'est pas initialisé");
     }
 
+    // Invariant : un caissier ne peut avoir qu'une seule caisse ouverte à la fois
+    const existingOpenSession = await ctx.db
+      .query("cashSessions")
+      .withIndex("by_user_status", (q) =>
+        q.eq("userId", request.requesterId).eq("status", "open")
+      )
+      .first();
+    if (existingOpenSession) {
+      throw new Error(
+        "Ce caissier a déjà une caisse ouverte. Elle doit être clôturée avant d'attribuer un nouveau fond."
+      );
+    }
+
     // Alerte si solde insuffisant (mais on autorise quand même)
     const isLowBalance = safe.currentBalance < args.amount;
 
@@ -560,6 +596,19 @@ export const approveFundRequest = mutation({
       approvedAt: now,
       amountGiven: args.amount,
       sessionId,
+    });
+
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: user.name, role: user.role },
+      action: "safe.fund_approved",
+      category: "safe",
+      summary: `Fond de caisse approuvé : ${args.amount} FCFA pour ${request.requesterName}`,
+      targetType: "cashFundRequest",
+      targetId: args.requestId,
+      targetName: request.requesterName,
+      before: String(safe.currentBalance),
+      after: String(newSafeBalance),
+      metadata: `Caissier : ${request.requesterName}`,
     });
 
     return {
@@ -614,6 +663,17 @@ export const rejectFundRequest = mutation({
       approvedByName: user.name,
       approvedAt: Date.now(),
       rejectionReason: args.reason.trim(),
+    });
+
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: user.name, role: user.role },
+      action: "safe.fund_rejected",
+      category: "safe",
+      summary: `Demande de fond rejetée pour ${request.requesterName}, motif : ${args.reason.trim()}`,
+      targetType: "cashFundRequest",
+      targetId: args.requestId,
+      targetName: request.requesterName,
+      metadata: args.reason.trim(),
     });
 
     return { rejected: true };
@@ -779,6 +839,19 @@ export const confirmDeposit = mutation({
       depositedAt: now,
       actualAmount: args.actualAmount,
       discrepancyNote: hasDiscrepancy ? args.discrepancyNote?.trim() : undefined,
+    });
+
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: user.name, role: user.role },
+      action: "safe.deposit_confirmed",
+      category: "safe",
+      summary: `Versement confirmé : ${args.actualAmount} FCFA de ${deposit.cashierName}`,
+      targetType: "pendingDeposit",
+      targetId: args.depositId,
+      targetName: deposit.cashierName,
+      before: String(safe.currentBalance),
+      after: String(newSafeBalance),
+      metadata: hasDiscrepancy ? `Écart : ${args.discrepancyNote?.trim()}` : undefined,
     });
 
     return {

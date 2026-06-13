@@ -105,6 +105,7 @@ export const getTodayStats = query({
     const totalQuantity = sales.reduce((sum, s) => sum + s.quantity, 0);
     const cashSales = sales.filter((s) => s.paymentMethod === "cash");
     const mobileSales = sales.filter((s) => s.paymentMethod === "mobile_money");
+    const creditSales = sales.filter((s) => s.paymentMethod === "credit");
 
     // Statistiques par produit
     const byProduct: Record<string, { name: string; quantity: number; amount: number }> = {};
@@ -125,6 +126,8 @@ export const getTodayStats = query({
       cashCount: cashSales.length,
       mobileAmount: mobileSales.reduce((sum, s) => sum + s.total, 0),
       mobileCount: mobileSales.length,
+      creditAmount: creditSales.reduce((sum, s) => sum + s.total, 0),
+      creditCount: creditSales.length,
       byProduct: Object.entries(byProduct).map(([id, data]) => ({
         productId: id,
         ...data,
@@ -288,8 +291,16 @@ export const createSale = mutation({
   args: {
     productId: v.id("products"),
     quantity: v.number(),
-    paymentMethod: v.union(v.literal("cash"), v.literal("mobile_money")),
-    clientId: v.optional(v.id("clients")), // Client optionnel
+    paymentMethod: v.union(
+      v.literal("cash"),
+      v.literal("mobile_money"),
+      v.literal("credit")
+    ),
+    clientId: v.optional(v.id("clients")), // Client optionnel (obligatoire si crédit)
+    amountReceived: v.optional(v.number()), // Espèces remises par le client (vente espèces)
+    changeMethod: v.optional(             // Comment la monnaie est rendue (si monnaie > 0)
+      v.union(v.literal("cash"), v.literal("mobile_money"))
+    ),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -360,6 +371,34 @@ export const createSale = mutation({
     const total = product.price * args.quantity;
     const newStock = product.stockQuantity - args.quantity;
 
+    // Vente à crédit (ardoise) : client identifié obligatoire, tout ou rien
+    const isCredit = args.paymentMethod === "credit";
+    if (isCredit && !client) {
+      throw new Error("Une vente à crédit nécessite un client identifié");
+    }
+    const paymentStatus: "paid" | "unpaid" = isCredit ? "unpaid" : "paid";
+    const amountDue = isCredit ? total : 0;
+
+    // Encaissement & monnaie à rendre (vente espèces avec montant reçu fourni)
+    let amountReceived: number | undefined;
+    let changeDue: number | undefined;
+    let changeMethod: "cash" | "mobile_money" | undefined;
+    let mobileMoneyChange: number | undefined;
+    if (args.paymentMethod === "cash" && args.amountReceived !== undefined) {
+      if (args.amountReceived < total) {
+        throw new Error("Le montant reçu est inférieur au total");
+      }
+      amountReceived = args.amountReceived;
+      changeDue = amountReceived - total;
+      if (changeDue > 0 && args.changeMethod === undefined) {
+        throw new Error(
+          "Précisez comment la monnaie est rendue (espèces ou Mobile Money)"
+        );
+      }
+      changeMethod = changeDue > 0 ? args.changeMethod : undefined;
+      mobileMoneyChange = changeMethod === "mobile_money" ? changeDue : 0;
+    }
+
     // Générer les références
     const saleReference: string = await ctx.runMutation(internal.references.getNextReference, {
       type: "sale",
@@ -379,6 +418,12 @@ export const createSale = mutation({
       unitPrice: product.price,
       total,
       paymentMethod: args.paymentMethod,
+      paymentStatus,
+      amountDue,
+      amountReceived,
+      changeDue,
+      changeMethod,
+      mobileMoneyChange,
       clientId: args.clientId,
       clientReference,
       clientName,
@@ -410,6 +455,13 @@ export const createSale = mutation({
       saleReference,
     });
 
+    // Crédit : augmenter l'encours du client (atomique avec la vente)
+    let clientBalanceAfter: number | undefined;
+    if (isCredit && client) {
+      clientBalanceAfter = (client.balance ?? 0) + total;
+      await ctx.db.patch(client._id, { balance: clientBalanceAfter });
+    }
+
     return {
       saleId,
       saleReference,
@@ -419,6 +471,10 @@ export const createSale = mutation({
       productName: product.name,
       unit: productUnit,
       clientName,
+      changeDue,
+      changeMethod,
+      isCredit,
+      clientBalanceAfter,
     };
   },
 });

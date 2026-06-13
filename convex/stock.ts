@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { writeAuditLog } from "./audit";
 
 // ============================================
 // QUERIES
@@ -240,6 +241,19 @@ export const addStock = mutation({
       newStock,
     });
 
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: user.name, role: user.role },
+      action: "stock.added",
+      category: "stock",
+      summary: `Entrée de stock : +${args.quantity} ${product.name} (${product.stockQuantity} → ${newStock}) — motif : ${args.reason.trim()}`,
+      targetType: "product",
+      targetId: args.productId,
+      targetRef: product.reference,
+      targetName: product.name,
+      before: String(product.stockQuantity),
+      after: String(newStock),
+    });
+
     return {
       success: true,
       movementReference,
@@ -320,6 +334,19 @@ export const adjustStock = mutation({
       userName: user.name,
       previousStock: product.stockQuantity,
       newStock: args.newQuantity,
+    });
+
+    await writeAuditLog(ctx, {
+      actor: { id: identity.subject, name: user.name, role: user.role },
+      action: "stock.adjusted",
+      category: "stock",
+      summary: `Ajustement d'inventaire : ${product.name} ${product.stockQuantity} → ${args.newQuantity} — motif : ${args.reason.trim()}`,
+      targetType: "product",
+      targetId: args.productId,
+      targetRef: product.reference,
+      targetName: product.name,
+      before: String(product.stockQuantity),
+      after: String(args.newQuantity),
     });
 
     return {

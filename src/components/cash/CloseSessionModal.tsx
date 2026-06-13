@@ -161,6 +161,34 @@ export function CloseSessionModal({ open, onOpenChange, onSuccess }: CloseSessio
               </span>
             </div>
 
+            {expectedData.totalMobileChangeGiven > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-xs sm:text-sm text-muted-foreground">
+                  Monnaie rendue (Mobile Money)
+                  <span className="block text-[10px] sm:text-xs text-muted-foreground/70">
+                    gardée en caisse
+                  </span>
+                </span>
+                <span className="font-medium text-[#016124] text-sm sm:text-base">
+                  +{formatPrice(expectedData.totalMobileChangeGiven)}
+                </span>
+              </div>
+            )}
+
+            {expectedData.totalCashRepayments > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-xs sm:text-sm text-muted-foreground">
+                  Règlements clients (espèces)
+                  <span className="block text-[10px] sm:text-xs text-muted-foreground/70">
+                    encaissés en caisse
+                  </span>
+                </span>
+                <span className="font-medium text-[#016124] text-sm sm:text-base">
+                  +{formatPrice(expectedData.totalCashRepayments)}
+                </span>
+              </div>
+            )}
+
             {withdrawnExpenses && withdrawnExpenses.total > 0 && (
               <div className="flex justify-between items-center">
                 <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
