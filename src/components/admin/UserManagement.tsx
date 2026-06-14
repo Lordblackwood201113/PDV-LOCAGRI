@@ -39,9 +39,9 @@ export function UserManagement() {
       case 'manager':
         return <Badge className="bg-blue-500 text-[10px] sm:text-xs">Manager</Badge>
       case 'cashier':
-        return <Badge className="bg-[#7ABE4E] text-[10px] sm:text-xs">Caissier</Badge>
+        return <Badge className="bg-locagri-success text-[10px] sm:text-xs">Caissier</Badge>
       case 'pending':
-        return <Badge className="bg-[#CF761C] text-[10px] sm:text-xs">En attente</Badge>
+        return <Badge className="bg-locagri-accent text-[10px] sm:text-xs">En attente</Badge>
       default:
         return <Badge variant="outline" className="text-[10px] sm:text-xs">{role}</Badge>
     }
@@ -107,12 +107,12 @@ export function UserManagement() {
     <div className="space-y-4 sm:space-y-6">
       {/* Section utilisateurs en attente */}
       {pendingUsers.length > 0 && (
-        <Card className="border-[#CF761C] bg-[#CF761C]/5">
+        <Card className="border-locagri-accent bg-locagri-accent/5">
           <CardHeader className="p-4 sm:p-6">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#CF761C]" />
+              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-accent" />
               <span className="truncate">Inscriptions en attente</span>
-              <Badge className="bg-[#CF761C] ml-auto text-[10px] sm:text-xs">{pendingUsers.length}</Badge>
+              <Badge className="bg-locagri-accent ml-auto text-[10px] sm:text-xs">{pendingUsers.length}</Badge>
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
               Ces utilisateurs attendent votre validation
@@ -129,7 +129,7 @@ export function UserManagement() {
                     className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 bg-white rounded-lg border"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#CF761C]/10 flex items-center justify-center text-[#CF761C] font-medium flex-shrink-0 text-sm">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-locagri-accent/10 flex items-center justify-center text-locagri-accent font-medium shrink-0 text-sm">
                         {user.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
@@ -140,7 +140,7 @@ export function UserManagement() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto">
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                       {isUpdating ? (
                         <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                       ) : (
@@ -148,7 +148,7 @@ export function UserManagement() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="text-[#7ABE4E] border-[#7ABE4E] hover:bg-[#7ABE4E]/10 text-xs h-8 px-2 sm:px-3"
+                            className="text-locagri-success border-locagri-success hover:bg-locagri-success/10 text-xs h-8 px-2 sm:px-3"
                             onClick={() => handleQuickApprove(user._id, 'cashier')}
                           >
                             <UserCheck className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
@@ -166,7 +166,7 @@ export function UserManagement() {
                           <Select
                             onValueChange={(value) => handleQuickApprove(user._id, value as UserRole)}
                           >
-                            <SelectTrigger className="w-[70px] sm:w-[100px] h-8 text-xs">
+                            <SelectTrigger className="w-17.5 sm:w-25 h-8 text-xs">
                               <SelectValue placeholder="..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -188,7 +188,7 @@ export function UserManagement() {
       <Card>
         <CardHeader className="p-4 sm:p-6">
           <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-            <Users className="w-4 h-4 sm:w-5 sm:h-5 text-[#016124]" />
+            <Users className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-primary" />
             Utilisateurs actifs
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm">
@@ -212,7 +212,7 @@ export function UserManagement() {
                   className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center font-medium flex-shrink-0 text-sm">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center font-medium shrink-0 text-sm">
                       {user.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
@@ -231,7 +231,7 @@ export function UserManagement() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto">
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                     {isCurrentUser ? (
                       <span className="text-xs text-muted-foreground">-</span>
                     ) : (
@@ -240,7 +240,7 @@ export function UserManagement() {
                         onValueChange={(value) => handleRoleChange(user._id, value as UserRole)}
                         disabled={isUpdating}
                       >
-                        <SelectTrigger className="w-[100px] sm:w-[120px] h-8 text-xs">
+                        <SelectTrigger className="w-25 sm:w-30 h-8 text-xs">
                           {isUpdating ? (
                             <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                           ) : (
@@ -268,8 +268,8 @@ export function UserManagement() {
           <ul className="text-xs sm:text-sm text-muted-foreground space-y-1">
             <li><strong className="text-purple-600">Admin:</strong> Accès complet</li>
             <li><strong className="text-blue-600">Manager:</strong> Ventes, stock, rapports</li>
-            <li><strong className="text-[#016124]">Caissier:</strong> Ventes uniquement</li>
-            <li><strong className="text-[#CF761C]">En attente:</strong> Aucun accès</li>
+            <li><strong className="text-locagri-primary">Caissier:</strong> Ventes uniquement</li>
+            <li><strong className="text-locagri-accent">En attente:</strong> Aucun accès</li>
           </ul>
         </div>
       </CardContent>

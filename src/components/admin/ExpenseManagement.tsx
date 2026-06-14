@@ -109,7 +109,7 @@ export function ExpenseManagement() {
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center justify-center gap-2">
-            <div className="w-5 h-5 border-2 border-[#016124] border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-locagri-primary border-t-transparent rounded-full animate-spin" />
             <span className="text-gray-500">Chargement...</span>
           </div>
         </CardContent>
@@ -137,13 +137,13 @@ export function ExpenseManagement() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
             <div>
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-[#016124]" />
+                <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-primary" />
                 Demandes de dépenses
               </CardTitle>
               <CardDescription className="text-xs sm:text-sm">
                 {pendingExpenses.length} demande{pendingExpenses.length > 1 ? 's' : ''} en attente
                 {totalPending > 0 && (
-                  <span className="ml-1 sm:ml-2 font-medium text-[#CF761C]">
+                  <span className="ml-1 sm:ml-2 font-medium text-locagri-accent">
                     ({formatPrice(totalPending)} F)
                   </span>
                 )}
@@ -194,7 +194,7 @@ export function ExpenseManagement() {
                     <div className="flex gap-2 sm:flex-col self-end sm:self-start">
                       <Button
                         size="sm"
-                        className="flex-1 sm:flex-none bg-[#7ABE4E] hover:bg-[#6aa842] text-xs sm:text-sm h-8"
+                        className="flex-1 sm:flex-none bg-locagri-success hover:bg-[#6aa842] text-xs sm:text-sm h-8"
                         onClick={() => handleApprove(expense._id)}
                         disabled={isProcessing}
                       >
@@ -282,12 +282,12 @@ export function TodayExpensesSummary() {
   }
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-[#CF761C]/10 rounded-lg border border-[#CF761C]/20">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-locagri-accent/10 rounded-lg border border-locagri-accent/20">
       <div className="flex items-center gap-2">
-        <Wallet className="w-4 h-4 text-[#CF761C] flex-shrink-0" />
+        <Wallet className="w-4 h-4 text-locagri-accent shrink-0" />
         <span className="text-xs sm:text-sm text-gray-600">Dépenses retirées aujourd'hui</span>
       </div>
-      <span className="font-semibold text-[#CF761C] text-sm sm:text-base self-end sm:self-auto">
+      <span className="font-semibold text-locagri-accent text-sm sm:text-base self-end sm:self-auto">
         -{formatPrice(todayExpenses.total)} F
       </span>
     </div>

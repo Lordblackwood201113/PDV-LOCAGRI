@@ -97,19 +97,19 @@ export function ReportsPage() {
 
         {/* Résumé des dépenses du jour — admin/manager uniquement */}
         {canSeeExpenses && todayExpenses && todayExpenses.total > 0 && (
-          <Card className="border-[#CF761C]/30 bg-[#CF761C]/5">
+          <Card className="border-locagri-accent/30 bg-locagri-accent/5">
             <CardContent className="p-4 sm:pt-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 bg-[#CF761C]/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-[#CF761C]" />
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 bg-locagri-accent/20 rounded-lg flex items-center justify-center shrink-0">
+                    <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-accent" />
                   </div>
                   <div>
                     <p className="font-medium text-gray-900 text-sm sm:text-base">Dépenses retirées aujourd'hui</p>
                     <p className="text-xs sm:text-sm text-gray-500">{todayExpenses.count} dépense{todayExpenses.count > 1 ? 's' : ''}</p>
                   </div>
                 </div>
-                <span className="text-lg sm:text-xl font-bold text-[#CF761C] self-end sm:self-auto">
+                <span className="text-lg sm:text-xl font-bold text-locagri-accent self-end sm:self-auto">
                   -{formatPrice(todayExpenses.total)} F
                 </span>
               </div>
@@ -141,7 +141,7 @@ export function ReportsPage() {
                     onClick={() => setDateRange(r)}
                     className={cn(
                       'text-xs h-7 px-3',
-                      dateRange === r && 'bg-white shadow-sm text-[#016124] hover:bg-white'
+                      dateRange === r && 'bg-white shadow-sm text-locagri-primary hover:bg-white'
                     )}
                   >
                     <Calendar className="w-3 h-3 mr-1.5" />
@@ -179,19 +179,19 @@ export function ReportsPage() {
                     className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-gray-50 rounded-lg"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                         sale.paymentMethod === 'cash'
-                          ? 'bg-[#7ABE4E]/10'
+                          ? 'bg-locagri-success/10'
                           : sale.paymentMethod === 'credit'
                             ? 'bg-[#7C3AED]/10'
-                            : 'bg-[#CF761C]/10'
+                            : 'bg-locagri-accent/10'
                       }`}>
                         {sale.paymentMethod === 'cash' ? (
-                          <Banknote className="w-4 h-4 text-[#016124]" />
+                          <Banknote className="w-4 h-4 text-locagri-primary" />
                         ) : sale.paymentMethod === 'credit' ? (
                           <Notebook className="w-4 h-4 text-[#7C3AED]" />
                         ) : (
-                          <Smartphone className="w-4 h-4 text-[#CF761C]" />
+                          <Smartphone className="w-4 h-4 text-locagri-accent" />
                         )}
                       </div>
                       <div className="min-w-0">
@@ -214,7 +214,7 @@ export function ReportsPage() {
                           {sale.clientName && (
                             <>
                               <span className="text-gray-300">·</span>
-                              <span className="truncate text-[#016124] font-medium">
+                              <span className="truncate text-locagri-primary font-medium">
                                 {sale.clientName}
                               </span>
                             </>
@@ -246,7 +246,7 @@ export function ReportsPage() {
           <Card>
             <CardHeader className="p-4 sm:p-6">
               <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-                <Receipt className="w-4 h-4 text-[#CF761C]" />
+                <Receipt className="w-4 h-4 text-locagri-accent" />
                 Dernières dépenses retirées
               </CardTitle>
             </CardHeader>
@@ -263,7 +263,7 @@ export function ReportsPage() {
                           <span className="font-medium text-sm truncate">
                             {expense.requesterName}
                           </span>
-                          <Badge variant="outline" className="text-[10px] flex-shrink-0">
+                          <Badge variant="outline" className="text-[10px] shrink-0">
                             {expense.category === 'fournitures' && 'Fournitures'}
                             {expense.category === 'transport' && 'Transport'}
                             {expense.category === 'maintenance' && 'Maintenance'}
@@ -282,7 +282,7 @@ export function ReportsPage() {
                           })}
                         </p>
                       </div>
-                      <span className="font-semibold text-sm text-[#CF761C] whitespace-nowrap flex-shrink-0">
+                      <span className="font-semibold text-sm text-locagri-accent whitespace-nowrap shrink-0">
                         -{formatPrice(expense.amount)} F
                       </span>
                     </div>

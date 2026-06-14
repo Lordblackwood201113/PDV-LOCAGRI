@@ -16,16 +16,16 @@ interface KPICardProps {
 
 const variantStyles = {
   default: {
-    iconBg: 'bg-[#016124]/10',
-    iconColor: 'text-[#016124]',
+    iconBg: 'bg-locagri-primary/10',
+    iconColor: 'text-locagri-primary',
   },
   success: {
-    iconBg: 'bg-[#7ABE4E]/20',
-    iconColor: 'text-[#016124]',
+    iconBg: 'bg-locagri-success/20',
+    iconColor: 'text-locagri-primary',
   },
   warning: {
-    iconBg: 'bg-[#CF761C]/15',
-    iconColor: 'text-[#CF761C]',
+    iconBg: 'bg-locagri-accent/15',
+    iconColor: 'text-locagri-accent',
   },
   danger: {
     iconBg: 'bg-red-100',
@@ -58,7 +58,7 @@ export function KPICard({
           )}
         </div>
         <div className={cn(
-          'w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0',
+          'w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0',
           styles.iconBg
         )}>
           <Icon className={cn('w-4 h-4 sm:w-5 sm:h-5', styles.iconColor)} />
@@ -69,7 +69,7 @@ export function KPICard({
         <div className="mt-2 sm:mt-3 flex items-center gap-1">
           <span className={cn(
             'text-[10px] sm:text-xs font-medium',
-            trend.value >= 0 ? 'text-[#7ABE4E]' : 'text-red-600'
+            trend.value >= 0 ? 'text-locagri-success' : 'text-red-600'
           )}>
             {trend.value >= 0 ? '+' : ''}{trend.value}%
           </span>

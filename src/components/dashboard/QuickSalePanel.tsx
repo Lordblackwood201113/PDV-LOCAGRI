@@ -157,7 +157,7 @@ export function QuickSalePanel() {
       {/* Header */}
       <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-50">
         <h3 className="font-semibold text-gray-900 flex items-center gap-2 text-sm sm:text-base">
-          <ShoppingBag className="w-4 h-4 text-[#016124]" />
+          <ShoppingBag className="w-4 h-4 text-locagri-primary" />
           Nouvelle Vente
         </h3>
       </div>
@@ -182,7 +182,7 @@ export function QuickSalePanel() {
                   className={cn(
                     'p-2 sm:p-3 rounded-lg border-2 text-left transition-all',
                     selectedProductId === p._id
-                      ? 'border-[#7ABE4E] bg-[#7ABE4E]/5'
+                      ? 'border-locagri-success bg-locagri-success/5'
                       : 'border-gray-100 hover:border-gray-200 bg-white'
                   )}
                 >
@@ -201,7 +201,7 @@ export function QuickSalePanel() {
             <p className="text-xs sm:text-sm text-gray-500">{formatPrice(product.price)} FCFA / {product.unit}</p>
             <p className={cn(
               'text-[10px] sm:text-xs mt-1',
-              product.stockQuantity <= product.alertThreshold ? 'text-[#CF761C]' : 'text-gray-400'
+              product.stockQuantity <= product.alertThreshold ? 'text-locagri-accent' : 'text-gray-400'
             )}>
               Stock: {product.stockQuantity} {product.unit}s
             </p>
@@ -251,7 +251,7 @@ export function QuickSalePanel() {
                 disabled={q > product.stockQuantity || isSubmitting}
                 className={cn(
                   'text-xs h-8 px-3',
-                  quantity === q && 'bg-[#016124] hover:bg-[#017a2e]'
+                  quantity === q && 'bg-locagri-primary hover:bg-locagri-primary-light'
                 )}
               >
                 {q}
@@ -281,7 +281,7 @@ export function QuickSalePanel() {
         {/* Prix de gros (grossiste uniquement) */}
         {isGrossiste && (
           <div className="space-y-2">
-            <label className="text-[10px] sm:text-xs font-medium text-[#016124] uppercase tracking-wide">
+            <label className="text-[10px] sm:text-xs font-medium text-locagri-primary uppercase tracking-wide">
               Prix unitaire grossiste (FCFA)
             </label>
             <Input
@@ -293,7 +293,7 @@ export function QuickSalePanel() {
               onChange={(e) => setCustomUnitPrice(e.target.value)}
               placeholder={`Prix boutique : ${formatPrice(product.price)}`}
               disabled={isSubmitting}
-              className="h-10 border-[#016124]/40 focus-visible:ring-[#016124]"
+              className="h-10 border-locagri-primary/40 focus-visible:ring-locagri-primary"
             />
             <p className="text-[10px] sm:text-xs text-gray-400">
               Prix négocié pour ce grossiste · {formatPrice(product.price)} F en boutique
@@ -313,7 +313,7 @@ export function QuickSalePanel() {
               className={cn(
                 'flex items-center justify-center gap-1.5 p-2.5 sm:p-3 rounded-lg border-2 transition-all',
                 paymentMethod === 'cash'
-                  ? 'border-[#7ABE4E] bg-[#7ABE4E]/5 text-[#016124]'
+                  ? 'border-locagri-success bg-locagri-success/5 text-locagri-primary'
                   : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
               )}
             >
@@ -329,7 +329,7 @@ export function QuickSalePanel() {
               className={cn(
                 'flex items-center justify-center gap-1.5 p-2.5 sm:p-3 rounded-lg border-2 transition-all',
                 paymentMethod === 'mobile_money'
-                  ? 'border-[#CF761C] bg-[#CF761C]/5 text-[#CF761C]'
+                  ? 'border-locagri-accent bg-locagri-accent/5 text-locagri-accent'
                   : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
               )}
             >
@@ -355,7 +355,7 @@ export function QuickSalePanel() {
           </div>
 
           {paymentMethod === 'credit' && (
-            <p className="text-xs text-[#CF761C] pt-1">
+            <p className="text-xs text-locagri-accent pt-1">
               {!selectedClientId
                 ? 'Sélectionnez un client pour la vente à crédit.'
                 : (selectedClient?.balance ?? 0) > 0
@@ -380,7 +380,7 @@ export function QuickSalePanel() {
               }
               placeholder={`Ex: ${total}`}
               disabled={isSubmitting}
-              className="w-full h-10 sm:h-11 rounded-lg border border-gray-200 px-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#7ABE4E]/40"
+              className="w-full h-10 sm:h-11 rounded-lg border border-gray-200 px-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-locagri-success/40"
             />
 
             {/* Raccourcis billets */}
@@ -417,7 +417,7 @@ export function QuickSalePanel() {
               ) : (
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-gray-500 text-sm">Monnaie à rendre</span>
-                  <span className="text-xl sm:text-2xl font-bold text-[#016124]">
+                  <span className="text-xl sm:text-2xl font-bold text-locagri-primary">
                     {formatPrice(Math.max(0, changeDue))}{' '}
                     <span className="text-xs font-normal text-gray-400">F</span>
                   </span>
@@ -438,7 +438,7 @@ export function QuickSalePanel() {
                     className={cn(
                       'flex items-center justify-center gap-1.5 p-2.5 rounded-lg border-2 transition-all',
                       changeMethod === 'cash'
-                        ? 'border-[#7ABE4E] bg-[#7ABE4E]/5 text-[#016124]'
+                        ? 'border-locagri-success bg-locagri-success/5 text-locagri-primary'
                         : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
                     )}
                   >
@@ -452,7 +452,7 @@ export function QuickSalePanel() {
                     className={cn(
                       'flex items-center justify-center gap-1.5 p-2.5 rounded-lg border-2 transition-all',
                       changeMethod === 'mobile_money'
-                        ? 'border-[#CF761C] bg-[#CF761C]/5 text-[#CF761C]'
+                        ? 'border-locagri-accent bg-locagri-accent/5 text-locagri-accent'
                         : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
                     )}
                   >
@@ -475,7 +475,7 @@ export function QuickSalePanel() {
           </div>
 
           <Button
-            className="w-full h-10 sm:h-12 text-sm sm:text-base font-semibold bg-[#016124] hover:bg-[#017a2e]"
+            className="w-full h-10 sm:h-12 text-sm sm:text-base font-semibold bg-locagri-primary hover:bg-locagri-primary-light"
             onClick={handleSale}
             disabled={!canSell}
           >

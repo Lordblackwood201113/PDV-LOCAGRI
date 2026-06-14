@@ -74,8 +74,8 @@ export function OpenSessionModal({ open, onSuccess, prefilledAmount, fundRequest
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#7ABE4E]/20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-[#016124]" />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-locagri-success/20 rounded-lg flex items-center justify-center shrink-0">
+              <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-primary" />
             </div>
             Ouverture de caisse
           </DialogTitle>
@@ -89,10 +89,10 @@ export function OpenSessionModal({ open, onSuccess, prefilledAmount, fundRequest
 
         {/* Badge fond approuvé */}
         {fundRequestApproved && (
-          <div className="flex items-center gap-2 p-2 sm:p-3 bg-[#7ABE4E]/10 rounded-lg border border-[#7ABE4E]/30">
-            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-[#016124] flex-shrink-0" />
+          <div className="flex items-center gap-2 p-2 sm:p-3 bg-locagri-success/10 rounded-lg border border-locagri-success/30">
+            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-primary shrink-0" />
             <div>
-              <p className="text-xs sm:text-sm font-medium text-[#016124]">Fond de caisse approuvé</p>
+              <p className="text-xs sm:text-sm font-medium text-locagri-primary">Fond de caisse approuvé</p>
               <p className="text-[10px] sm:text-xs text-gray-600">Montant attribué: {formatPrice(prefilledAmount || 0)}</p>
             </div>
           </div>

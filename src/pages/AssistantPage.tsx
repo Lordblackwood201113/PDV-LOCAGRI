@@ -1,13 +1,26 @@
 import { useState, useRef, useEffect } from 'react'
-import { useQuery, useAction } from 'convex/react'
+import { useQuery, useAction, useMutation, useConvex } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Sparkles, Send, Plus, MessageSquare, ShieldOff, Loader2, Lock } from 'lucide-react'
+import {
+  Sparkles,
+  Send,
+  Plus,
+  MessageSquare,
+  ShieldOff,
+  Loader2,
+  Lock,
+  Trash2,
+  FileText,
+  FileSpreadsheet,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { MarkdownMessage } from '@/components/assistant/MarkdownMessage'
+import { runAssistantExport, type PreparedExport } from '@/lib/assistantExports'
 
 const SUGGESTIONS = [
   'Fais-moi le point de la journée',
@@ -16,14 +29,27 @@ const SUGGESTIONS = [
   'Quel est mon chiffre d’affaires ce mois-ci ?',
 ]
 
+function parseExports(raw: string | undefined | null): PreparedExport[] {
+  if (!raw) return []
+  try {
+    const arr = JSON.parse(raw)
+    return Array.isArray(arr) ? (arr as PreparedExport[]) : []
+  } catch {
+    return []
+  }
+}
+
 export function AssistantPage() {
   const currentUser = useQuery(api.users.getCurrentUser)
   const conversations = useQuery(api.assistant.getConversations)
   const ask = useAction(api.assistant.ask)
+  const deleteConversation = useMutation(api.assistant.deleteConversation)
+  const convex = useConvex()
 
   const [conversationId, setConversationId] = useState<Id<'assistantConversations'> | null>(null)
   const [input, setInput] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [exportingKey, setExportingKey] = useState<string | null>(null)
 
   const messages = useQuery(
     api.assistant.getMessages,
@@ -82,6 +108,42 @@ export function AssistantPage() {
     setInput('')
   }
 
+  const handleDelete = async (
+    id: Id<'assistantConversations'>,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation()
+    if (!window.confirm('Supprimer définitivement cette conversation ?')) return
+    try {
+      await deleteConversation({ conversationId: id })
+      if (conversationId === id) setConversationId(null)
+      toast.success('Conversation supprimée')
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Erreur inconnue'
+      toast.error('Suppression', { description: msg })
+    }
+  }
+
+  const handleExport = async (exp: PreparedExport, key: string) => {
+    if (exportingKey) return
+    setExportingKey(key)
+    try {
+      const n = await runAssistantExport(convex, exp)
+      if (n === 0) {
+        toast.warning('Aucune donnée', { description: 'Rien à exporter pour ces critères.' })
+      } else {
+        toast.success('Fichier généré', {
+          description: `${n} ligne(s) — ${exp.format === 'pdf' ? 'PDF' : 'Excel'}`,
+        })
+      }
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Erreur inconnue'
+      toast.error('Export', { description: msg })
+    } finally {
+      setExportingKey(null)
+    }
+  }
+
   const showEmptyState = !conversationId || (messages && messages.length === 0)
 
   return (
@@ -89,24 +151,38 @@ export function AssistantPage() {
       {/* Colonne conversations */}
       <aside className="hidden md:flex md:flex-col w-60 border-r border-gray-100 bg-white">
         <div className="p-3">
-          <Button onClick={newConversation} className="w-full bg-[#016124] hover:bg-[#017a2e]">
+          <Button onClick={newConversation} className="w-full bg-locagri-primary hover:bg-locagri-primary-light">
             <Plus className="w-4 h-4 mr-2" />
             Nouvelle conversation
           </Button>
         </div>
         <div className="flex-1 overflow-auto px-2 pb-2 space-y-1">
           {conversations?.map((c) => (
-            <button
+            <div
               key={c._id}
-              onClick={() => setConversationId(c._id)}
               className={cn(
-                'w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors flex items-center gap-2',
-                conversationId === c._id ? 'bg-[#016124]/10 text-[#016124] font-medium' : 'hover:bg-gray-50 text-gray-700'
+                'group relative flex items-center rounded-lg transition-colors',
+                conversationId === c._id ? 'bg-locagri-primary/10' : 'hover:bg-gray-50'
               )}
             >
-              <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
-              <span className="truncate">{c.title || 'Conversation'}</span>
-            </button>
+              <button
+                onClick={() => setConversationId(c._id)}
+                className={cn(
+                  'flex-1 min-w-0 text-left px-3 py-2 rounded-lg text-sm truncate flex items-center gap-2',
+                  conversationId === c._id ? 'text-locagri-primary font-medium' : 'text-gray-700'
+                )}
+              >
+                <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-60" />
+                <span className="truncate">{c.title || 'Conversation'}</span>
+              </button>
+              <button
+                onClick={(e) => handleDelete(c._id, e)}
+                title="Supprimer la conversation"
+                className="shrink-0 p-1.5 mr-1 rounded-md text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-600 hover:bg-red-50 transition-all"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
           ))}
         </div>
       </aside>
@@ -116,8 +192,8 @@ export function AssistantPage() {
         {/* En-tête */}
         <div className="px-4 py-3 border-b border-gray-100 bg-white flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#016124]/10 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-[#016124]" />
+            <div className="w-8 h-8 rounded-lg bg-locagri-primary/10 flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-locagri-primary" />
             </div>
             <div>
               <h2 className="font-semibold text-sm text-gray-900">Assistant IA</h2>
@@ -133,12 +209,12 @@ export function AssistantPage() {
         <div ref={scrollRef} className="flex-1 overflow-auto p-4 space-y-3">
           {showEmptyState ? (
             <div className="h-full flex flex-col items-center justify-center text-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-[#016124]/10 flex items-center justify-center">
-                <Sparkles className="w-7 h-7 text-[#016124]" />
+              <div className="w-14 h-14 rounded-2xl bg-locagri-primary/10 flex items-center justify-center">
+                <Sparkles className="w-7 h-7 text-locagri-primary" />
               </div>
               <div>
                 <p className="font-medium text-gray-900">Posez une question sur votre activité</p>
-                <p className="text-sm text-gray-500">CA, stock, créances, caisses, dépenses, journal…</p>
+                <p className="text-sm text-gray-500">CA, stock, créances, caisses, dépenses, coffre, journal… ou demandez un export PDF/Excel.</p>
               </div>
               <div className="flex flex-wrap justify-center gap-2 max-w-lg">
                 {SUGGESTIONS.map((s) => (
@@ -146,7 +222,7 @@ export function AssistantPage() {
                     key={s}
                     onClick={() => send(s)}
                     disabled={isSending}
-                    className="text-xs px-3 py-1.5 rounded-full border border-gray-200 bg-white text-gray-700 hover:border-[#7ABE4E] hover:text-[#016124] transition-colors"
+                    className="text-xs px-3 py-1.5 rounded-full border border-gray-200 bg-white text-gray-700 hover:border-locagri-success hover:text-locagri-primary transition-colors"
                   >
                     {s}
                   </button>
@@ -154,23 +230,53 @@ export function AssistantPage() {
               </div>
             </div>
           ) : (
-            messages?.map((m) => (
-              <div
-                key={m._id}
-                className={cn('flex', m.role === 'user' ? 'justify-end' : 'justify-start')}
-              >
+            messages?.map((m) => {
+              const exps = m.role === 'assistant' ? parseExports(m.exports) : []
+              return (
                 <div
-                  className={cn(
-                    'max-w-[85%] sm:max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm whitespace-pre-wrap',
-                    m.role === 'user'
-                      ? 'bg-[#016124] text-white rounded-br-sm'
-                      : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm'
-                  )}
+                  key={m._id}
+                  className={cn('flex', m.role === 'user' ? 'justify-end' : 'justify-start')}
                 >
-                  {m.content}
+                  <div
+                    className={cn(
+                      'max-w-[85%] sm:max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm',
+                      m.role === 'user'
+                        ? 'bg-locagri-primary text-white rounded-br-sm whitespace-pre-wrap'
+                        : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm'
+                    )}
+                  >
+                    {m.role === 'user' ? m.content : <MarkdownMessage content={m.content} />}
+
+                    {exps.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {exps.map((exp, idx) => {
+                          const key = `${m._id}:${idx}`
+                          const busy = exportingKey === key
+                          return (
+                            <button
+                              key={key}
+                              onClick={() => handleExport(exp, key)}
+                              disabled={busy}
+                              className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:border-locagri-primary hover:text-locagri-primary transition-colors disabled:opacity-60"
+                            >
+                              {busy ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : exp.format === 'pdf' ? (
+                                <FileText className="w-3.5 h-3.5" />
+                              ) : (
+                                <FileSpreadsheet className="w-3.5 h-3.5" />
+                              )}
+                              <span className="truncate max-w-50">{exp.title}</span>
+                              <span className="opacity-60">· {exp.format === 'pdf' ? 'PDF' : 'Excel'}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
+              )
+            })
           )}
 
           {isSending && (
@@ -202,7 +308,7 @@ export function AssistantPage() {
             <Button
               type="submit"
               disabled={isSending || !input.trim()}
-              className="bg-[#016124] hover:bg-[#017a2e]"
+              className="bg-locagri-primary hover:bg-locagri-primary-light"
             >
               <Send className="w-4 h-4" />
             </Button>

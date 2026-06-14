@@ -72,12 +72,12 @@ export function CashierFundRequest({ onSessionOpened }: CashierFundRequestProps)
   // Demande en attente
   if (myFundRequest && myFundRequest.status === 'pending') {
     return (
-      <Card className="border-[#CF761C]/30 bg-[#CF761C]/5">
+      <Card className="border-locagri-accent/30 bg-locagri-accent/5">
         <CardHeader className="text-center p-4 sm:p-6">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#CF761C]/20 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-            <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-[#CF761C] animate-pulse" />
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-locagri-accent/20 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-locagri-accent animate-pulse" />
           </div>
-          <CardTitle className="text-lg sm:text-xl text-[#CF761C]">Demande en cours</CardTitle>
+          <CardTitle className="text-lg sm:text-xl text-locagri-accent">Demande en cours</CardTitle>
           <CardDescription className="text-xs sm:text-sm">
             Votre demande de fond de caisse est en attente de validation par un responsable
           </CardDescription>
@@ -103,8 +103,8 @@ export function CashierFundRequest({ onSessionOpened }: CashierFundRequestProps)
   return (
     <Card>
       <CardHeader className="text-center p-4 sm:p-6">
-        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#016124]/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-          <Banknote className="w-6 h-6 sm:w-8 sm:h-8 text-[#016124]" />
+        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-locagri-primary/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+          <Banknote className="w-6 h-6 sm:w-8 sm:h-8 text-locagri-primary" />
         </div>
         <CardTitle className="text-lg sm:text-xl">Ouvrir ma caisse</CardTitle>
         <CardDescription className="text-xs sm:text-sm">
@@ -114,7 +114,7 @@ export function CashierFundRequest({ onSessionOpened }: CashierFundRequestProps)
       <CardContent className="text-center p-4 sm:p-6 pt-0 sm:pt-0">
         <Button
           onClick={handleRequest}
-          className="bg-[#016124] hover:bg-[#017a2e] text-sm sm:text-base"
+          className="bg-locagri-primary hover:bg-locagri-primary-light text-sm sm:text-base"
           size="lg"
         >
           <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" />
@@ -140,10 +140,10 @@ export function PendingDepositStatus() {
   }
 
   return (
-    <div className="p-3 sm:p-4 bg-[#7ABE4E]/10 rounded-lg border border-[#7ABE4E]/30">
+    <div className="p-3 sm:p-4 bg-locagri-success/10 rounded-lg border border-locagri-success/30">
       <div className="flex items-center gap-2 sm:gap-3">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#7ABE4E]/20 rounded-full flex items-center justify-center flex-shrink-0">
-          <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#016124]" />
+        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-locagri-success/20 rounded-full flex items-center justify-center shrink-0">
+          <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-primary" />
         </div>
         <div className="min-w-0">
           <p className="font-medium text-gray-900 text-sm sm:text-base">Versement en attente</p>

@@ -180,7 +180,7 @@ export function ProductManagement() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <Package className="w-4 h-4 sm:w-5 sm:h-5 text-[#016124]" />
+              <Package className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-primary" />
               Gestion des produits
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
@@ -198,7 +198,7 @@ export function ProductManagement() {
                 + Ajouter
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-106.25 max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-lg sm:text-xl">
                   {editingProduct ? 'Modifier le produit' : 'Ajouter un produit'}
@@ -346,7 +346,7 @@ export function ProductManagement() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-medium text-sm sm:text-base truncate">{product.name}</p>
                         {product.isActive ? (
-                          <Badge className="bg-[#7ABE4E] text-[10px] sm:text-xs">Actif</Badge>
+                          <Badge className="bg-locagri-success text-[10px] sm:text-xs">Actif</Badge>
                         ) : (
                           <Badge variant="secondary" className="text-[10px] sm:text-xs">Archivé</Badge>
                         )}
@@ -365,7 +365,7 @@ export function ProductManagement() {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className={`font-medium text-sm ${
-                        isCritical ? 'text-red-600' : isLowStock ? 'text-[#CF761C]' : 'text-[#016124]'
+                        isCritical ? 'text-red-600' : isLowStock ? 'text-locagri-accent' : 'text-locagri-primary'
                       }`}>
                         {product.stockQuantity} {product.unit}s
                       </span>

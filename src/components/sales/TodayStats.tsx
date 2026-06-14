@@ -26,7 +26,7 @@ export function TodayStats({ expanded = false }: TodayStatsProps) {
       <Card>
         <CardHeader className="pb-2 p-3 sm:p-6 sm:pb-2">
           <CardTitle className="text-xs sm:text-sm text-muted-foreground flex items-center gap-2">
-            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#7ABE4E] rounded-full animate-pulse" />
+            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-locagri-success rounded-full animate-pulse" />
             Aujourd'hui
           </CardTitle>
         </CardHeader>
@@ -59,7 +59,7 @@ export function TodayStats({ expanded = false }: TodayStatsProps) {
       <Card>
         <CardHeader className="p-3 sm:p-6">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#7ABE4E] rounded-full animate-pulse" />
+            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-locagri-success rounded-full animate-pulse" />
             Statistiques du jour
           </CardTitle>
         </CardHeader>
@@ -98,8 +98,8 @@ export function TodayStats({ expanded = false }: TodayStatsProps) {
             {/* Espèces */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#7ABE4E]/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Banknote className="w-4 h-4 sm:w-5 sm:h-5 text-[#016124]" />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-locagri-success/20 rounded-lg flex items-center justify-center shrink-0">
+                  <Banknote className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-primary" />
                 </div>
                 <div className="min-w-0">
                   <p className="font-medium text-sm sm:text-base">Espèces</p>
@@ -108,7 +108,7 @@ export function TodayStats({ expanded = false }: TodayStatsProps) {
                   </p>
                 </div>
               </div>
-              <div className="text-right flex-shrink-0">
+              <div className="text-right shrink-0">
                 <p className="font-bold text-primary text-sm sm:text-base">{formatPrice(todayStats.cashAmount)}</p>
                 {todayStats.totalAmount > 0 && (
                   <p className="text-xs sm:text-sm text-muted-foreground">
@@ -123,8 +123,8 @@ export function TodayStats({ expanded = false }: TodayStatsProps) {
             {/* Mobile Money */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#CF761C]/15 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 text-[#CF761C]" />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-locagri-accent/15 rounded-lg flex items-center justify-center shrink-0">
+                  <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-accent" />
                 </div>
                 <div className="min-w-0">
                   <p className="font-medium text-sm sm:text-base">Mobile Money</p>
@@ -133,7 +133,7 @@ export function TodayStats({ expanded = false }: TodayStatsProps) {
                   </p>
                 </div>
               </div>
-              <div className="text-right flex-shrink-0">
+              <div className="text-right shrink-0">
                 <p className="font-bold text-primary text-sm sm:text-base">{formatPrice(todayStats.mobileAmount)}</p>
                 {todayStats.totalAmount > 0 && (
                   <p className="text-xs sm:text-sm text-muted-foreground">
@@ -170,7 +170,7 @@ export function TodayStats({ expanded = false }: TodayStatsProps) {
                       {product.stockQuantity} {product.unit}s
                     </p>
                   </div>
-                  <div className="text-right flex-shrink-0">
+                  <div className="text-right shrink-0">
                     <p className="text-xs sm:text-sm text-muted-foreground">Prix</p>
                     <p className="font-bold text-primary text-sm sm:text-base">
                       {formatPrice(product.price)}
@@ -182,8 +182,8 @@ export function TodayStats({ expanded = false }: TodayStatsProps) {
 
             {/* Alerte globale si produits en stock bas */}
             {products.some(p => p.stockQuantity <= p.alertThreshold) && (
-              <div className="p-2 sm:p-3 bg-[#CF761C]/10 rounded-lg text-xs sm:text-sm text-[#CF761C] flex items-center gap-1.5 sm:gap-2">
-                <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+              <div className="p-2 sm:p-3 bg-locagri-accent/10 rounded-lg text-xs sm:text-sm text-locagri-accent flex items-center gap-1.5 sm:gap-2">
+                <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
                 <span>Certains produits sont en dessous du seuil d'alerte</span>
               </div>
             )}

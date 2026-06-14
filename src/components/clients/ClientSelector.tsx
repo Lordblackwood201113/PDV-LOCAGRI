@@ -128,7 +128,7 @@ export function ClientSelector({
               )}
               disabled={disabled}
             >
-              <User className="w-4 h-4 mr-2 flex-shrink-0" />
+              <User className="w-4 h-4 mr-2 shrink-0" />
               <span className="truncate">
                 {selectedClientName || 'Client (optionnel)'}
               </span>
@@ -208,7 +208,7 @@ export function ClientSelector({
                           </p>
                         </div>
                         {selectedClientId === client._id && (
-                          <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                          <Check className="w-4 h-4 text-primary shrink-0" />
                         )}
                       </div>
                     </button>
@@ -225,7 +225,7 @@ export function ClientSelector({
             size="icon-sm"
             onClick={handleClearClient}
             disabled={disabled}
-            className="flex-shrink-0"
+            className="shrink-0"
           >
             <X className="w-4 h-4" />
           </Button>
@@ -234,10 +234,10 @@ export function ClientSelector({
 
       {/* Create Client Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-100">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-[#016124]" />
+              <UserPlus className="w-5 h-5 text-locagri-primary" />
               Nouveau client
             </DialogTitle>
             <DialogDescription>
@@ -300,7 +300,7 @@ export function ClientSelector({
                     className={cn(
                       'p-2.5 rounded-lg border-2 text-sm font-medium transition-all',
                       newClient.type === t
-                        ? 'border-[#016124] bg-[#016124]/5 text-[#016124]'
+                        ? 'border-locagri-primary bg-locagri-primary/5 text-locagri-primary'
                         : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
                     )}
                   >
@@ -325,7 +325,7 @@ export function ClientSelector({
             <Button
               onClick={handleCreateClient}
               disabled={isCreating}
-              className="bg-[#016124] hover:bg-[#017a2e]"
+              className="bg-locagri-primary hover:bg-locagri-primary-light"
             >
               {isCreating ? (
                 <span className="flex items-center gap-2">

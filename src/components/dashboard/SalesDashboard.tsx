@@ -85,15 +85,15 @@ export function SalesDashboard() {
                   {todayStats.cashCount} vente{todayStats.cashCount > 1 ? 's' : ''}
                 </p>
               </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#7ABE4E]/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Banknote className="w-5 h-5 sm:w-6 sm:h-6 text-[#016124]" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-locagri-success/10 rounded-xl flex items-center justify-center shrink-0">
+                <Banknote className="w-5 h-5 sm:w-6 sm:h-6 text-locagri-primary" />
               </div>
             </div>
             {todayStats.totalAmount > 0 && (
               <div className="mt-2 sm:mt-3">
                 <div className="h-1.5 sm:h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#7ABE4E] rounded-full transition-all"
+                    className="h-full bg-locagri-success rounded-full transition-all"
                     style={{ width: `${(todayStats.cashAmount / todayStats.totalAmount) * 100}%` }}
                   />
                 </div>
@@ -115,15 +115,15 @@ export function SalesDashboard() {
                   {todayStats.mobileCount} vente{todayStats.mobileCount > 1 ? 's' : ''}
                 </p>
               </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#CF761C]/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Banknote className="w-5 h-5 sm:w-6 sm:h-6 text-[#CF761C]" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-locagri-accent/10 rounded-xl flex items-center justify-center shrink-0">
+                <Banknote className="w-5 h-5 sm:w-6 sm:h-6 text-locagri-accent" />
               </div>
             </div>
             {todayStats.totalAmount > 0 && (
               <div className="mt-2 sm:mt-3">
                 <div className="h-1.5 sm:h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#CF761C] rounded-full transition-all"
+                    className="h-full bg-locagri-accent rounded-full transition-all"
                     style={{ width: `${(todayStats.mobileAmount / todayStats.totalAmount) * 100}%` }}
                   />
                 </div>

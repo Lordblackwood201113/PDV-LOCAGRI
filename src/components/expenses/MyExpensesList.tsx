@@ -11,8 +11,8 @@ type ExpenseStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn'
 type ExpenseCategory = 'fournitures' | 'transport' | 'maintenance' | 'autre'
 
 const statusConfig: Record<ExpenseStatus, { label: string; color: string; icon: typeof Clock }> = {
-  pending: { label: 'En attente', color: 'bg-[#CF761C] text-white', icon: Clock },
-  approved: { label: 'Approuvée', color: 'bg-[#7ABE4E] text-white', icon: CheckCircle },
+  pending: { label: 'En attente', color: 'bg-locagri-accent text-white', icon: Clock },
+  approved: { label: 'Approuvée', color: 'bg-locagri-success text-white', icon: CheckCircle },
   rejected: { label: 'Rejetée', color: 'bg-red-500 text-white', icon: XCircle },
   withdrawn: { label: 'Retirée', color: 'bg-gray-500 text-white', icon: Wallet },
 }
@@ -74,7 +74,7 @@ export function MyExpensesList() {
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center justify-center gap-2">
-            <div className="w-5 h-5 border-2 border-[#016124] border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-locagri-primary border-t-transparent rounded-full animate-spin" />
             <span className="text-gray-500">Chargement...</span>
           </div>
         </CardContent>
@@ -91,7 +91,7 @@ export function MyExpensesList() {
     <Card>
       <CardHeader className="p-3 sm:p-6">
         <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-          <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-[#016124]" />
+          <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-primary" />
           Mes demandes de dépenses
         </CardTitle>
         <CardDescription className="text-xs sm:text-sm">
@@ -101,8 +101,8 @@ export function MyExpensesList() {
       <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
         {/* Dépenses approuvées à retirer */}
         {myApprovedToWithdraw.length > 0 && (
-          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-[#7ABE4E]/10 rounded-lg border border-[#7ABE4E]/30">
-            <h4 className="font-medium text-[#016124] mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-locagri-success/10 rounded-lg border border-locagri-success/30">
+            <h4 className="font-medium text-locagri-primary mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
               <ArrowDownCircle className="w-4 h-4" />
               Dépenses à retirer
             </h4>
@@ -121,7 +121,7 @@ export function MyExpensesList() {
                   <Button
                     size="sm"
                     onClick={() => handleWithdraw(expense._id, expense.amount)}
-                    className="bg-[#016124] hover:bg-[#017a2e] text-xs sm:text-sm h-8 self-end sm:self-auto"
+                    className="bg-locagri-primary hover:bg-locagri-primary-light text-xs sm:text-sm h-8 self-end sm:self-auto"
                   >
                     <Wallet className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                     Retirer
@@ -184,7 +184,7 @@ export function MyExpensesList() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                       {expense.status === 'pending' && (
                         <Button
                           variant="ghost"

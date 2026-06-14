@@ -55,7 +55,7 @@ export function StockHistory() {
     switch (type) {
       case 'in':
         return (
-          <Badge className="bg-[#7ABE4E] text-[10px] sm:text-xs">
+          <Badge className="bg-locagri-success text-[10px] sm:text-xs">
             +{quantity} Entrée
           </Badge>
         )
@@ -79,11 +79,11 @@ export function StockHistory() {
   const getMovementIcon = (type: string) => {
     switch (type) {
       case 'in':
-        return <PackagePlus className="w-4 h-4 sm:w-5 sm:h-5 text-[#7ABE4E]" />
+        return <PackagePlus className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-success" />
       case 'out':
         return <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
       case 'adjustment':
-        return <ClipboardEdit className="w-4 h-4 sm:w-5 sm:h-5 text-[#CF761C]" />
+        return <ClipboardEdit className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-accent" />
       default:
         return <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-slate-500" />
     }
@@ -107,7 +107,7 @@ export function StockHistory() {
       <CardHeader className="p-3 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-            <History className="w-4 h-4 sm:w-5 sm:h-5 text-[#016124]" />
+            <History className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-primary" />
             Historique des mouvements
           </CardTitle>
 
@@ -119,7 +119,7 @@ export function StockHistory() {
                 value={productFilter}
                 onValueChange={(value) => setProductFilter(value as Id<'products'> | 'all')}
               >
-                <SelectTrigger className="w-[130px] sm:w-[160px] h-8 sm:h-9 text-xs sm:text-sm">
+                <SelectTrigger className="w-32.5 sm:w-40 h-8 sm:h-9 text-xs sm:text-sm">
                   <SelectValue placeholder="Produit" />
                 </SelectTrigger>
                 <SelectContent>
@@ -138,7 +138,7 @@ export function StockHistory() {
               value={filter}
               onValueChange={(value) => setFilter(value as MovementType)}
             >
-              <SelectTrigger className="w-[110px] sm:w-[140px] h-8 sm:h-9 text-xs sm:text-sm">
+              <SelectTrigger className="w-27.5 sm:w-35 h-8 sm:h-9 text-xs sm:text-sm">
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent>
@@ -165,7 +165,7 @@ export function StockHistory() {
                 className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-muted/50 rounded-lg"
               >
                 {/* Icône */}
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
                   {getMovementIcon(movement.type)}
                 </div>
 

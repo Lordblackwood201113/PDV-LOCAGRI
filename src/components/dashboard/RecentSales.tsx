@@ -22,10 +22,10 @@ export function RecentSales() {
   return (
     <div className="bg-white rounded-xl border border-gray-100 overflow-hidden h-full flex flex-col">
       {/* Header */}
-      <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-50 flex-shrink-0">
+      <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-50 shrink-0">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-gray-900 flex items-center gap-2 text-sm sm:text-base">
-            <Clock className="w-4 h-4 text-[#016124]" />
+            <Clock className="w-4 h-4 text-locagri-primary" />
             Ventes récentes
           </h3>
           {todaySales && (
@@ -53,7 +53,7 @@ export function RecentSales() {
                       <p className="font-medium text-xs sm:text-sm text-gray-900 truncate">
                         {sale.productName || 'Produit'}
                       </p>
-                      <span className="text-[10px] sm:text-xs text-gray-400 flex-shrink-0">
+                      <span className="text-[10px] sm:text-xs text-gray-400 shrink-0">
                         x{sale.quantity}
                       </span>
                     </div>
@@ -68,7 +68,7 @@ export function RecentSales() {
                       {sale.clientName && (
                         <>
                           <span className="text-gray-300">·</span>
-                          <span className="text-[10px] sm:text-xs text-[#016124] font-medium truncate">
+                          <span className="text-[10px] sm:text-xs text-locagri-primary font-medium truncate">
                             {sale.clientName}
                           </span>
                         </>
@@ -82,21 +82,21 @@ export function RecentSales() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                  <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                     <div className={cn(
                       'w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center',
                       sale.paymentMethod === 'cash'
-                        ? 'bg-[#7ABE4E]/10'
+                        ? 'bg-locagri-success/10'
                         : sale.paymentMethod === 'credit'
                           ? 'bg-[#7C3AED]/10'
-                          : 'bg-[#CF761C]/10'
+                          : 'bg-locagri-accent/10'
                     )}>
                       {sale.paymentMethod === 'cash' ? (
-                        <Banknote className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#016124]" />
+                        <Banknote className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-locagri-primary" />
                       ) : sale.paymentMethod === 'credit' ? (
                         <Notebook className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#7C3AED]" />
                       ) : (
-                        <Smartphone className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#CF761C]" />
+                        <Smartphone className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-locagri-accent" />
                       )}
                     </div>
                     <span className="font-semibold text-xs sm:text-sm text-gray-900 tabular-nums whitespace-nowrap">
@@ -112,7 +112,7 @@ export function RecentSales() {
 
       {/* Footer si plus de ventes */}
       {todaySales && todaySales.length > 8 && (
-        <div className="px-4 sm:px-5 py-2.5 sm:py-3 border-t border-gray-50 bg-gray-50/50 flex-shrink-0">
+        <div className="px-4 sm:px-5 py-2.5 sm:py-3 border-t border-gray-50 bg-gray-50/50 shrink-0">
           <p className="text-[10px] sm:text-xs text-gray-500 text-center">
             +{todaySales.length - 8} autres ventes
           </p>

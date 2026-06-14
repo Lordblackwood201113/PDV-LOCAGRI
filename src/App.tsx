@@ -54,7 +54,7 @@ function LoginScreen() {
     <div className="min-h-screen bg-white flex items-center justify-center p-3 sm:p-4">
       <div className="w-full max-w-5xl flex flex-col lg:flex-row rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl overflow-hidden bg-white border border-gray-100">
         {/* Panneau gauche - Branding (plus compact) */}
-        <div className="hidden lg:flex lg:w-2/5 bg-gradient-to-br from-[#016124] to-[#017a2e] relative p-10">
+        <div className="hidden lg:flex lg:w-2/5 bg-linear-to-br from-locagri-primary to-locagri-primary-light relative p-10">
           {/* Motif décoratif subtil */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-10 right-10 w-32 h-32 bg-white rounded-full blur-2xl" />
@@ -80,7 +80,7 @@ function LoginScreen() {
             {/* Features compactes */}
             <div className="mt-8 space-y-3">
               <div className="flex items-center gap-3 text-white/90 text-sm">
-                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -88,7 +88,7 @@ function LoginScreen() {
                 <span>Ventes rapides</span>
               </div>
               <div className="flex items-center gap-3 text-white/90 text-sm">
-                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
@@ -96,7 +96,7 @@ function LoginScreen() {
                 <span>Rapports détaillés</span>
               </div>
               <div className="flex items-center gap-3 text-white/90 text-sm">
-                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
@@ -127,7 +127,7 @@ function LoginScreen() {
 
             {/* Bouton de connexion */}
             <SignInButton mode="modal">
-              <Button className="w-full h-10 sm:h-12 text-sm sm:text-base font-semibold bg-[#016124] hover:bg-[#017a2e] transition-all duration-200 rounded-xl">
+              <Button className="w-full h-10 sm:h-12 text-sm sm:text-base font-semibold bg-locagri-primary hover:bg-locagri-primary-light transition-all duration-200 rounded-xl">
                 Se connecter
               </Button>
             </SignInButton>
@@ -238,17 +238,17 @@ function AuthenticatedApp() {
       <div className="min-h-screen bg-background flex items-center justify-center p-3 sm:p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center p-4 sm:p-6">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#CF761C]/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-              <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-[#CF761C]" />
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-locagri-accent/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-locagri-accent" />
             </div>
-            <CardTitle className="text-lg sm:text-xl text-[#CF761C]">
+            <CardTitle className="text-lg sm:text-xl text-locagri-accent">
               Inscription en attente
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-3 sm:space-y-4 p-4 sm:p-6 pt-0 sm:pt-0">
             <div className="p-3 sm:p-4 bg-muted rounded-lg">
               <div className="flex items-center justify-center gap-2 mb-1.5 sm:mb-2">
-                <UserCheck className="w-4 h-4 sm:w-5 sm:h-5 text-[#016124]" />
+                <UserCheck className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-primary" />
                 <span className="font-medium text-sm sm:text-base">{currentUserData.name}</span>
               </div>
               <p className="text-xs sm:text-sm text-muted-foreground truncate">{currentUserData.email}</p>

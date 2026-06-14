@@ -378,6 +378,7 @@ export default defineSchema({
     toolCalls: v.optional(v.string()),   // JSON des tool_calls (assistant), pour rejouer
     toolCallId: v.optional(v.string()),  // pour role "tool"
     toolName: v.optional(v.string()),    // nom de l'outil appelé
+    exports: v.optional(v.string()),     // JSON: descripteurs d'exports préparés (PDF/Excel) attachés à un message assistant
     createdAt: v.number(),
     tokensPrompt: v.optional(v.number()),
     tokensCompletion: v.optional(v.number()),

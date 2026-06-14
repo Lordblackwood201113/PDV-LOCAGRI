@@ -34,22 +34,22 @@ export function SessionStatus() {
   // Session ouverte
   if (hasOpenSession && sessionData) {
     return (
-      <div className="bg-[#7ABE4E]/10 border-b border-[#7ABE4E]/30 px-2 sm:px-4 py-1.5 sm:py-2">
+      <div className="bg-locagri-success/10 border-b border-locagri-success/30 px-2 sm:px-4 py-1.5 sm:py-2">
         <div className="max-w-lg mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 sm:gap-3 text-[10px] sm:text-sm flex-wrap min-w-0">
             <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#7ABE4E] rounded-full animate-pulse flex-shrink-0" />
-              <span className="text-[#016124] font-medium">Ouverte</span>
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-locagri-success rounded-full animate-pulse shrink-0" />
+              <span className="text-locagri-primary font-medium">Ouverte</span>
             </span>
-            <span className="text-[#016124]/80 hidden sm:inline">
+            <span className="text-locagri-primary/80 hidden sm:inline">
               {formatTime(sessionData.openedAt)}
             </span>
             <span className="text-muted-foreground hidden sm:inline">|</span>
-            <span className="text-[#016124]/80">
+            <span className="text-locagri-primary/80">
               Fond: {formatPrice(sessionData.openingAmount)}
             </span>
             {expectedData && (
-              <span className="text-[#016124]/80 hidden sm:inline">
+              <span className="text-locagri-primary/80 hidden sm:inline">
                 | Attendu: {formatPrice(expectedData.expectedAmount)}
               </span>
             )}
@@ -57,7 +57,7 @@ export function SessionStatus() {
           <Button
             variant="outline"
             size="sm"
-            className="text-[10px] sm:text-xs border-[#7ABE4E]/50 text-[#016124] hover:bg-[#7ABE4E]/20 h-6 sm:h-7 px-2 flex-shrink-0"
+            className="text-[10px] sm:text-xs border-locagri-success/50 text-locagri-primary hover:bg-locagri-success/20 h-6 sm:h-7 px-2 shrink-0"
             onClick={openCloseModal}
           >
             Clôturer
