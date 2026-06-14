@@ -12,6 +12,11 @@ const DEEPSEEK_ENDPOINT = "https://api.deepseek.com/chat/completions";
 const DEFAULT_MODEL = "deepseek-chat"; // déprécié ~2026-07-24 → surchargeable via DEEPSEEK_MODEL
 const MAX_ITERATIONS = 6;
 const MAX_TOOL_RESULT_CHARS = 12000;
+// Plafond des exports de listes clients (= max des queries). Gardé IDENTIQUE côté
+// front (src/lib/assistantExports.ts) pour que le comptage serveur et le fichier
+// fabriqué couvrent exactement le même ensemble de lignes.
+const CLIENT_EXPORT_LIMIT = 200;
+const TOP_CLIENTS_EXPORT_LIMIT = 100;
 
 const SYSTEM_PROMPT = `Tu es l'assistant de gestion de LOCAGRI, un point de vente de produits agricoles. Tu réponds à l'ADMINISTRATEUR, en français, de façon concise et factuelle.
 RÈGLE ABSOLUE : tu ne réponds QUE sur la base des données renvoyées par tes outils. Tu n'inventes JAMAIS un chiffre, un nom, un solde ni une date. Si aucun outil ne fournit l'information, réponds exactement : "Je ne sais pas, cette information n'est pas disponible dans les données."
@@ -19,6 +24,7 @@ Pour toute question chiffrée (CA, stock, créances, dépenses, écarts), appell
 Monnaie : toujours en FCFA, nombres entiers, séparateur de milliers (ex. 1 250 000 FCFA). Dates : convertis "ce mois", "hier", "la semaine dernière" en bornes AAAA-MM-JJ à partir de la date du jour fournie.
 Pour un client cité par son nom : appelle d'abord search_clients, puis get_client_detail. Pour une synthèse ("fais le point") : get_business_dashboard.
 Tu disposes d'outils couvrant TOUTES les données de la boutique : ventes (résumé get_sales_summary, détail get_sales_detail, top get_top_products), stock (get_low_stock, get_stock_movements, catalogue list_products), créances (get_receivables, get_client_detail), coffre (get_safe_status, get_safe_transactions), dépenses (get_expenses_summary, get_expenses_detail), caisse (get_cash_discrepancy_report, get_cash_sessions), équipe (list_team), opérations en attente (get_pending_operations) et journal d'audit (get_audit_logs).
+CLIENTS & RELANCES : pour LISTER ou SEGMENTER les clients, utilise list_clients (filtre les NOUVEAUX clients par période de création et par type particulier/grossiste). Pour préparer des RELANCES : get_inactive_clients (clients sans achat récent à réactiver) et get_credit_relances (débiteurs triés par ANCIENNETÉ de la dette). Pour repérer les MEILLEURS clients et bâtir une recommandation, get_top_clients, puis get_client_detail pour voir ce qu'un client achète. RELANCES = LECTURE SEULE : tu PRÉPARES la liste des clients à contacter (avec téléphone) et tu peux PROPOSER un message type, mais tu N'ENVOIES aucun SMS/appel/message et tu ne crées/modifies AUCUN client ; pour contacter quelqu'un, indique l'écran Clients ou le téléphone affiché. Pour une liste imprimable, utilise prepare_export (new_clients, inactive_clients, top_clients).
 EXPORTS : si l'admin demande d'exporter, télécharger ou générer un fichier (PDF/Excel), appelle prepare_export avec le bon report et format, puis confirme en une phrase que le fichier est prêt (titre + nombre de lignes). N'écris jamais toi-même le contenu d'un tableau d'export.
 FORMATAGE : structure tes réponses en Markdown léger — **gras** pour les chiffres clés, listes à puces pour les énumérations, et tableaux Markdown quand tu compares plusieurs lignes. Reste concis.
 Tu as un accès LECTURE SEULE : tu ne peux RIEN modifier, valider, approuver, supprimer ni créer. Si on te le demande, explique que tu es en lecture seule et indique l'écran de l'application à utiliser.
@@ -444,6 +450,94 @@ const TOOLS: AssistantTool[] = [
       return { fundRequests, deposits, expenses };
     },
   },
+  // ---- Intelligence clients (story 1.7) ----
+  {
+    name: "list_clients",
+    description:
+      "Liste / parcourt les clients ; filtre les NOUVEAUX clients par période de création (startDate/endDate en AAAA-MM-JJ, ou days = N derniers jours) et par type (particulier/grossiste). Triés du plus récent au plus ancien, enrichis du nombre d'achats, du dernier achat et du total acheté. Sans période : tous les clients actifs (bornés).",
+    parameters: {
+      type: "object",
+      properties: {
+        startDate: { type: "string", description: "AAAA-MM-JJ — début de la fenêtre de création" },
+        endDate: { type: "string", description: "AAAA-MM-JJ — fin de la fenêtre de création" },
+        days: { type: "integer", description: "Alternative : clients créés dans les N derniers jours" },
+        type: { type: "string", enum: ["particulier", "grossiste"] },
+        includeInactive: { type: "boolean", description: "inclure les clients archivés (défaut false)" },
+        limit: { type: "integer", description: "défaut 50, max 200" },
+      },
+      required: [],
+      additionalProperties: false,
+    },
+    run: (ctx, a) =>
+      ctx.runQuery(api.analytics.getRecentClients, {
+        startDate: str(a.startDate),
+        endDate: str(a.endDate),
+        days: num(a.days),
+        type: a.type as "particulier" | "grossiste" | undefined,
+        includeInactive: a.includeInactive === true,
+        limit: num(a.limit, 200),
+      }),
+  },
+  {
+    name: "get_inactive_clients",
+    description:
+      "Clients ACTIFS sans achat depuis 'days' jours (défaut 30) — pour les RELANCES d'inactivité. Inclut par défaut les clients n'ayant jamais acheté. Triés du plus inactif au moins inactif, avec téléphone, encours et date du dernier achat.",
+    parameters: {
+      type: "object",
+      properties: {
+        days: { type: "integer", description: "seuil d'inactivité en jours (défaut 30)" },
+        type: { type: "string", enum: ["particulier", "grossiste"] },
+        includeNeverPurchased: {
+          type: "boolean",
+          description: "inclure ceux qui n'ont jamais acheté (défaut true)",
+        },
+        limit: { type: "integer", description: "défaut 50, max 200" },
+      },
+      required: [],
+      additionalProperties: false,
+    },
+    run: (ctx, a) =>
+      ctx.runQuery(api.analytics.getInactiveClients, {
+        days: num(a.days),
+        type: a.type as "particulier" | "grossiste" | undefined,
+        includeNeverPurchased: a.includeNeverPurchased !== false,
+        limit: num(a.limit, 200),
+      }),
+  },
+  {
+    name: "get_top_clients",
+    description:
+      "Meilleurs clients par MONTANT acheté sur une période (base des recommandations). Renvoie le total acheté, le nombre d'achats, le dernier achat, l'encours et les produits achetés (byProduct).",
+    parameters: {
+      type: "object",
+      properties: {
+        startDate: { type: "string", description: "AAAA-MM-JJ inclus (optionnel)" },
+        endDate: { type: "string", description: "AAAA-MM-JJ inclus (optionnel)" },
+        limit: { type: "integer", description: "défaut 10, max 100" },
+      },
+      required: [],
+      additionalProperties: false,
+    },
+    run: (ctx, a) =>
+      ctx.runQuery(api.analytics.getTopClients, {
+        startDate: str(a.startDate),
+        endDate: str(a.endDate),
+        limit: num(a.limit, 100),
+      }),
+  },
+  {
+    name: "get_credit_relances",
+    description:
+      "Débiteurs à RELANCER pour crédits en retard, triés par ANCIENNETÉ de la dette (daysOverdue = jours depuis la plus ancienne vente à crédit impayée). Renvoie téléphone, encours, ancienneté et nombre de ventes impayées.",
+    parameters: {
+      type: "object",
+      properties: { limit: { type: "integer", description: "défaut 100, max 300" } },
+      required: [],
+      additionalProperties: false,
+    },
+    run: (ctx, a) =>
+      ctx.runQuery(api.analytics.getReceivablesAging, { limit: num(a.limit, 300) }),
+  },
 ];
 
 // --------------------------------------------
@@ -460,7 +554,10 @@ type ReportKey =
   | "expenses"
   | "audit_logs"
   | "cash_sessions"
-  | "safe_transactions";
+  | "safe_transactions"
+  | "new_clients"
+  | "inactive_clients"
+  | "top_clients";
 
 interface ExportDescriptor {
   report: ReportKey;
@@ -478,6 +575,9 @@ const REPORT_LABELS: Record<ReportKey, string> = {
   audit_logs: "Journal d'audit",
   cash_sessions: "Sessions de caisse",
   safe_transactions: "Transactions du coffre",
+  new_clients: "Nouveaux clients",
+  inactive_clients: "Clients inactifs",
+  top_clients: "Meilleurs clients",
 };
 
 const PREPARE_EXPORT_DEF = {
@@ -497,16 +597,24 @@ const PREPARE_EXPORT_DEF = {
           "audit_logs",
           "cash_sessions",
           "safe_transactions",
+          "new_clients",
+          "inactive_clients",
+          "top_clients",
         ],
         description: "Type de rapport à exporter",
       },
       format: { type: "string", enum: ["pdf", "xlsx"], description: "pdf ou xlsx (Excel)" },
       startDate: { type: "string", description: "AAAA-MM-JJ (borne incluse, si pertinent)" },
       endDate: { type: "string", description: "AAAA-MM-JJ (borne incluse, si pertinent)" },
+      days: {
+        type: "integer",
+        description:
+          "inactive_clients : seuil d'inactivité en jours (défaut 30) ; new_clients : clients créés dans les N derniers jours",
+      },
       type: {
         type: "string",
         description:
-          "Filtre type — stock_movements: in/out/adjustment ; safe_transactions: initial/withdrawal/deposit/adjustment/bank_deposit",
+          "Filtre type — stock_movements: in/out/adjustment ; safe_transactions: initial/withdrawal/deposit/adjustment/bank_deposit ; new_clients/inactive_clients: particulier/grossiste",
       },
       status: {
         type: "string",
@@ -589,6 +697,32 @@ async function countReportRows(
             | undefined,
         })
       ).length;
+    case "new_clients":
+      return (
+        await ctx.runQuery(api.analytics.getRecentClients, {
+          startDate: str(p.startDate),
+          endDate: str(p.endDate),
+          days: num(p.days),
+          type: p.type as "particulier" | "grossiste" | undefined,
+          limit: CLIENT_EXPORT_LIMIT,
+        })
+      ).length;
+    case "inactive_clients":
+      return (
+        await ctx.runQuery(api.analytics.getInactiveClients, {
+          days: num(p.days),
+          type: p.type as "particulier" | "grossiste" | undefined,
+          limit: CLIENT_EXPORT_LIMIT,
+        })
+      ).length;
+    case "top_clients":
+      return (
+        await ctx.runQuery(api.analytics.getTopClients, {
+          startDate: str(p.startDate),
+          endDate: str(p.endDate),
+          limit: TOP_CLIENTS_EXPORT_LIMIT,
+        })
+      ).length;
   }
 }
 
@@ -596,6 +730,12 @@ function exportTitle(report: ReportKey, p: Record<string, unknown>): string {
   const base = REPORT_LABELS[report];
   const start = str(p.startDate);
   const end = str(p.endDate);
+  if (report === "inactive_clients") {
+    return `${base} (≥ ${num(p.days) ?? 30} j sans achat)`;
+  }
+  if (report === "new_clients" && num(p.days) && !start && !end) {
+    return `${base} (${num(p.days)} derniers jours)`;
+  }
   if (start && end) return `${base} du ${start} au ${end}`;
   if (start) return `${base} depuis le ${start}`;
   if (end) return `${base} jusqu'au ${end}`;
@@ -632,6 +772,11 @@ async function runPrepareExport(
   for (const k of ["startDate", "endDate", "type", "status", "category", "userId"]) {
     if (a[k] !== undefined && a[k] !== null && a[k] !== "") params[k] = a[k];
   }
+  // `days` normalisé à la source (number) : le modèle peut l'émettre en chaîne et
+  // num() la coerce, tandis que le front ne lit que les number — sans cette
+  // normalisation, comptage serveur et fichier client divergeraient sur le seuil.
+  const daysNum = num(a.days);
+  if (daysNum !== undefined) params.days = daysNum;
   let rowCount = 0;
   try {
     rowCount = await countReportRows(ctx, report, params);

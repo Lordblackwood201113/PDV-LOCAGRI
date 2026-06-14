@@ -1,6 +1,10 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { formatClientName } from "./clients";
+
+const DAY_MS = 86_400_000;
 
 // ============================================
 // AGRÉGATIONS (outils lecture seule pour l'assistant IA + rapports)
@@ -384,6 +388,306 @@ export const getBusinessDashboard = query({
         deposits: pendingDep.length,
         expenses: pendingExp.length,
       },
+    };
+  },
+});
+
+// ============================================
+// INTELLIGENCE CLIENTS (story 1.7) — outils lecture seule pour l'assistant IA
+// Segmentations simples (nouveaux / inactifs / meilleurs / débiteurs âgés) ;
+// le modèle raisonne dessus pour recommandations & relances. Admin/manager.
+// ============================================
+
+/**
+ * Clients récents / NOUVEAUX clients sur une fenêtre de création (ou tous, bornés),
+ * triés du plus récent au plus ancien et enrichis de l'activité d'achat.
+ * Dates en AAAA-MM-JJ (comme les autres agrégations) ; `days` = N derniers jours.
+ */
+export const getRecentClients = query({
+  args: {
+    startDate: v.optional(v.string()),
+    endDate: v.optional(v.string()),
+    days: v.optional(v.number()),
+    type: v.optional(v.union(v.literal("particulier"), v.literal("grossiste"))),
+    includeInactive: v.optional(v.boolean()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    if (!(await requireStaff(ctx))) return [];
+
+    let clients = await ctx.db.query("clients").collect();
+    if (!args.includeInactive) clients = clients.filter((c) => c.isActive);
+    if (args.type) clients = clients.filter((c) => (c.type ?? "particulier") === args.type);
+
+    // Fenêtre de création : bornes explicites (startDate/endDate) OU N derniers jours.
+    // `days` est EXCLUSIF des bornes : il n'agit que si AUCUNE borne valide n'est posée
+    // (sinon `days` ancré sur "maintenant" pourrait inverser la fenêtre → liste vide).
+    // Date malformée → bornée ignorée (pas de NaN qui viderait silencieusement la liste).
+    let from: number | undefined;
+    let to: number | undefined;
+    if (args.startDate) {
+      const t = startTs(args.startDate);
+      if (!Number.isNaN(t)) from = t;
+    }
+    if (args.endDate) {
+      const t = endTs(args.endDate);
+      if (!Number.isNaN(t)) to = t;
+    }
+    if (from === undefined && to === undefined && args.days && args.days > 0) {
+      from = Date.now() - args.days * DAY_MS;
+    }
+    if (from !== undefined) clients = clients.filter((c) => c.createdAt >= from!);
+    if (to !== undefined) clients = clients.filter((c) => c.createdAt <= to!);
+
+    clients.sort((a, b) => b.createdAt - a.createdAt);
+    const limit = Math.min(Math.max(args.limit ?? 50, 1), 200);
+    const top = clients.slice(0, limit);
+
+    // Enrichir uniquement le sous-ensemble retenu (lectures by_client ciblées)
+    return await Promise.all(
+      top.map(async (c) => {
+        const sales = await ctx.db
+          .query("sales")
+          .withIndex("by_client", (q) => q.eq("clientId", c._id))
+          .collect();
+        const lastPurchaseAt = sales.reduce<number | null>(
+          (max, s) => (max === null || s.date > max ? s.date : max),
+          null
+        );
+        return {
+          _id: c._id,
+          reference: c.reference,
+          displayName: formatClientName(c.firstName, c.lastName, c.reference),
+          phone: c.phone ?? null,
+          quartier: c.quartier ?? null,
+          type: c.type ?? "particulier",
+          isActive: c.isActive,
+          createdAt: c.createdAt,
+          createdByName: c.createdByName,
+          balance: c.balance ?? 0,
+          purchaseCount: sales.length,
+          lastPurchaseAt,
+          totalPurchased: sales.reduce((sum, s) => sum + s.total, 0),
+        };
+      })
+    );
+  },
+});
+
+/**
+ * Clients ACTIFS sans achat depuis `days` jours (défaut 30) — relances d'inactivité.
+ * Inclut par défaut ceux qui n'ont jamais acheté. Triés du plus inactif au moins inactif.
+ */
+export const getInactiveClients = query({
+  args: {
+    days: v.optional(v.number()),
+    type: v.optional(v.union(v.literal("particulier"), v.literal("grossiste"))),
+    includeNeverPurchased: v.optional(v.boolean()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    if (!(await requireStaff(ctx))) return [];
+
+    const days = args.days && args.days > 0 ? args.days : 30;
+    const includeNever = args.includeNeverPurchased ?? true;
+
+    // Un seul passage sur les ventes → dernier achat + nb achats par client
+    const lastPurchase = new Map<string, number>();
+    const purchaseCount = new Map<string, number>();
+    for (const s of await ctx.db.query("sales").collect()) {
+      if (!s.clientId) continue;
+      const k = s.clientId as string;
+      const prev = lastPurchase.get(k);
+      if (prev === undefined || s.date > prev) lastPurchase.set(k, s.date);
+      purchaseCount.set(k, (purchaseCount.get(k) ?? 0) + 1);
+    }
+
+    let clients = await ctx.db
+      .query("clients")
+      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .collect();
+    if (args.type) clients = clients.filter((c) => (c.type ?? "particulier") === args.type);
+
+    const now = Date.now();
+    const rows = clients
+      .map((c) => {
+        const last = lastPurchase.get(c._id) ?? null;
+        return {
+          _id: c._id,
+          reference: c.reference,
+          displayName: formatClientName(c.firstName, c.lastName, c.reference),
+          phone: c.phone ?? null,
+          quartier: c.quartier ?? null,
+          type: c.type ?? "particulier",
+          balance: c.balance ?? 0,
+          purchaseCount: purchaseCount.get(c._id) ?? 0,
+          lastPurchaseAt: last,
+          daysSinceLastPurchase: last === null ? null : Math.floor((now - last) / DAY_MS),
+        };
+      })
+      // Filtre dérivé de la MÊME valeur que la colonne affichée/exportée
+      // (daysSinceLastPurchase floorée) → pas de divergence d'un jour au bord.
+      // « inactif depuis au moins `days` jours » (cohérent avec le titre « ≥ days j »).
+      .filter((r) =>
+        r.daysSinceLastPurchase === null ? includeNever : r.daysSinceLastPurchase >= days
+      )
+      .sort((a, b) => {
+        // jamais acheté en tête, sinon le plus ancien dernier achat d'abord
+        if (a.lastPurchaseAt === null && b.lastPurchaseAt === null) return 0;
+        if (a.lastPurchaseAt === null) return -1;
+        if (b.lastPurchaseAt === null) return 1;
+        return a.lastPurchaseAt - b.lastPurchaseAt;
+      });
+
+    const limit = Math.min(Math.max(args.limit ?? 50, 1), 200);
+    return rows.slice(0, limit);
+  },
+});
+
+/**
+ * Meilleurs clients par MONTANT acheté sur une période (base des recommandations).
+ * Ignore les ventes anonymes (sans clientId).
+ */
+export const getTopClients = query({
+  args: {
+    startDate: v.optional(v.string()),
+    endDate: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    if (!(await requireStaff(ctx))) return [];
+
+    let sales;
+    if (args.startDate || args.endDate) {
+      // Date malformée → borne ouverte (0 / +∞) plutôt que NaN (qui ne matcherait rien).
+      const s = args.startDate ? startTs(args.startDate) : NaN;
+      const e = args.endDate ? endTs(args.endDate) : NaN;
+      const start = Number.isNaN(s) ? 0 : s;
+      const end = Number.isNaN(e) ? Number.MAX_SAFE_INTEGER : e;
+      sales = await ctx.db
+        .query("sales")
+        .withIndex("by_date")
+        .filter((q) => q.and(q.gte(q.field("date"), start), q.lte(q.field("date"), end)))
+        .collect();
+    } else {
+      sales = await ctx.db.query("sales").collect();
+    }
+
+    const map = new Map<
+      string,
+      {
+        clientId: string;
+        totalAmount: number;
+        purchaseCount: number;
+        totalQuantity: number;
+        lastPurchaseAt: number;
+        byProduct: Map<string, { name: string; quantity: number; amount: number }>;
+      }
+    >();
+    for (const s of sales) {
+      if (!s.clientId) continue;
+      const k = s.clientId as string;
+      const cur =
+        map.get(k) ??
+        {
+          clientId: k,
+          totalAmount: 0,
+          purchaseCount: 0,
+          totalQuantity: 0,
+          lastPurchaseAt: 0,
+          byProduct: new Map<string, { name: string; quantity: number; amount: number }>(),
+        };
+      cur.totalAmount += s.total;
+      cur.purchaseCount += 1;
+      cur.totalQuantity += s.quantity;
+      if (s.date > cur.lastPurchaseAt) cur.lastPurchaseAt = s.date;
+      const pk = (s.productId ?? "legacy") as string;
+      const p = cur.byProduct.get(pk) ?? { name: s.productName ?? "Produit", quantity: 0, amount: 0 };
+      p.quantity += s.quantity;
+      p.amount += s.total;
+      cur.byProduct.set(pk, p);
+      map.set(k, cur);
+    }
+
+    const limit = Math.min(Math.max(args.limit ?? 10, 1), 100);
+    const sorted = Array.from(map.values())
+      .sort((a, b) => b.totalAmount - a.totalAmount)
+      .slice(0, limit);
+
+    return await Promise.all(
+      sorted.map(async (agg) => {
+        const c = await ctx.db.get(agg.clientId as Id<"clients">);
+        return {
+          _id: agg.clientId,
+          reference: c?.reference ?? "-",
+          displayName: c ? formatClientName(c.firstName, c.lastName, c.reference) : "Client inconnu",
+          phone: c?.phone ?? null,
+          type: c?.type ?? "particulier",
+          balance: c?.balance ?? 0,
+          totalAmount: agg.totalAmount,
+          purchaseCount: agg.purchaseCount,
+          totalQuantity: agg.totalQuantity,
+          lastPurchaseAt: agg.lastPurchaseAt,
+          byProduct: Array.from(agg.byProduct.values()).sort((a, b) => b.amount - a.amount),
+        };
+      })
+    );
+  },
+});
+
+/**
+ * Débiteurs à relancer AVEC ancienneté de la dette (jours depuis la plus ancienne
+ * vente à crédit impayée). Distinct de getReceivables (qui trie par montant) → aucune
+ * régression de l'outil/export existant. Trié par ancienneté décroissante.
+ */
+export const getReceivablesAging = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    if (!(await requireStaff(ctx)))
+      return { clients: [], totalOutstanding: 0, debtorCount: 0 };
+
+    const activeClients = await ctx.db
+      .query("clients")
+      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .collect();
+    const debtors = activeClients.filter((c) => (c.balance ?? 0) > 0);
+
+    const now = Date.now();
+    const rows = await Promise.all(
+      debtors.map(async (c) => {
+        const sales = await ctx.db
+          .query("sales")
+          .withIndex("by_client", (q) => q.eq("clientId", c._id))
+          .collect();
+        const unpaid = sales.filter(
+          (s) => s.paymentMethod === "credit" && (s.paymentStatus ?? "unpaid") === "unpaid"
+        );
+        const oldestUnpaidDate = unpaid.reduce<number | null>(
+          (min, s) => (min === null || s.date < min ? s.date : min),
+          null
+        );
+        return {
+          _id: c._id,
+          reference: c.reference,
+          displayName: formatClientName(c.firstName, c.lastName, c.reference),
+          phone: c.phone ?? null,
+          quartier: c.quartier ?? null,
+          type: c.type ?? "particulier",
+          balance: c.balance ?? 0,
+          oldestUnpaidDate,
+          daysOverdue:
+            oldestUnpaidDate === null ? 0 : Math.floor((now - oldestUnpaidDate) / DAY_MS),
+          unpaidSalesCount: unpaid.length,
+        };
+      })
+    );
+    rows.sort((a, b) => b.daysOverdue - a.daysOverdue || b.balance - a.balance);
+
+    const limit = Math.min(Math.max(args.limit ?? 100, 1), 300);
+    return {
+      clients: rows.slice(0, limit),
+      totalOutstanding: rows.reduce((s, c) => s + c.balance, 0),
+      debtorCount: rows.length,
     };
   },
 });
