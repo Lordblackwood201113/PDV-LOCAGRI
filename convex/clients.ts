@@ -580,7 +580,7 @@ export const recordClientPayment = mutation({
 // HELPERS
 // ============================================
 
-function formatClientName(
+export function formatClientName(
   firstName: string | undefined,
   lastName: string | undefined,
   reference: string

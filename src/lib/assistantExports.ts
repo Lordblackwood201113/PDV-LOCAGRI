@@ -8,6 +8,12 @@ import {
 } from './exportUtils'
 import { exportTableToPdf } from './pdfUtils'
 
+// Plafonds des exports de listes clients — DOIVENT rester identiques au backend
+// (convex/assistant.ts : CLIENT_EXPORT_LIMIT / TOP_CLIENTS_EXPORT_LIMIT) pour que
+// le comptage serveur et le fichier fabriqué portent le même ensemble de lignes.
+const CLIENT_EXPORT_LIMIT = 200
+const TOP_CLIENTS_EXPORT_LIMIT = 100
+
 // Doit rester aligné avec le backend (convex/assistant.ts : ReportKey).
 export type ReportKey =
   | 'sales'
@@ -17,6 +23,9 @@ export type ReportKey =
   | 'audit_logs'
   | 'cash_sessions'
   | 'safe_transactions'
+  | 'new_clients'
+  | 'inactive_clients'
+  | 'top_clients'
 
 export interface PreparedExport {
   report: ReportKey
@@ -250,6 +259,84 @@ async function buildReport(
         sheetName: 'Coffre',
         headers: ['Date', 'Type', 'Montant (FCFA)', 'Solde avant', 'Solde après', 'Par', 'Motif'],
         rows,
+      }
+    }
+
+    case 'new_clients': {
+      const clients = await convex.query(api.analytics.getRecentClients, {
+        startDate,
+        endDate,
+        days: typeof p.days === 'number' ? p.days : undefined,
+        type: p.type as 'particulier' | 'grossiste' | undefined,
+        includeInactive: p.includeInactive === true,
+        limit: CLIENT_EXPORT_LIMIT,
+      })
+      const rows: Cell[][] = clients.map((c) => [
+        c.displayName,
+        c.reference,
+        c.phone ?? '-',
+        c.quartier ?? '-',
+        c.type === 'grossiste' ? 'Grossiste' : 'Particulier',
+        formatExportDate(c.createdAt),
+        c.lastPurchaseAt ? formatExportDate(c.lastPurchaseAt) : '-',
+        c.purchaseCount,
+        c.totalPurchased,
+      ])
+      const totalAchats = clients.reduce((sum, c) => sum + c.totalPurchased, 0)
+      return {
+        sheetName: 'Nouveaux clients',
+        headers: ['Client', 'Référence', 'Téléphone', 'Quartier', 'Type', 'Créé le', 'Dernier achat', 'Nb achats', 'Total acheté (FCFA)'],
+        rows,
+        totals: ['TOTAL', '', '', '', '', '', '', '', totalAchats],
+      }
+    }
+
+    case 'inactive_clients': {
+      const clients = await convex.query(api.analytics.getInactiveClients, {
+        days: typeof p.days === 'number' ? p.days : undefined,
+        type: p.type as 'particulier' | 'grossiste' | undefined,
+        limit: CLIENT_EXPORT_LIMIT,
+      })
+      const rows: Cell[][] = clients.map((c) => [
+        c.displayName,
+        c.reference,
+        c.phone ?? '-',
+        c.quartier ?? '-',
+        c.type === 'grossiste' ? 'Grossiste' : 'Particulier',
+        c.lastPurchaseAt ? formatExportDate(c.lastPurchaseAt) : 'Jamais',
+        c.daysSinceLastPurchase === null ? '-' : c.daysSinceLastPurchase,
+        c.balance,
+      ])
+      const totalEncours = clients.reduce((sum, c) => sum + c.balance, 0)
+      return {
+        sheetName: 'Clients inactifs',
+        headers: ['Client', 'Référence', 'Téléphone', 'Quartier', 'Type', 'Dernier achat', 'Jours inactif', 'Encours (FCFA)'],
+        rows,
+        totals: ['TOTAL', '', '', '', '', '', '', totalEncours],
+      }
+    }
+
+    case 'top_clients': {
+      const clients = await convex.query(api.analytics.getTopClients, {
+        startDate,
+        endDate,
+        limit: TOP_CLIENTS_EXPORT_LIMIT,
+      })
+      const rows: Cell[][] = clients.map((c) => [
+        c.displayName,
+        c.reference,
+        c.phone ?? '-',
+        c.type === 'grossiste' ? 'Grossiste' : 'Particulier',
+        c.purchaseCount,
+        c.totalAmount,
+        c.lastPurchaseAt ? formatExportDate(c.lastPurchaseAt) : '-',
+      ])
+      const total = clients.reduce((sum, c) => sum + c.totalAmount, 0)
+      return {
+        sheetName: 'Meilleurs clients',
+        headers: ['Client', 'Référence', 'Téléphone', 'Type', 'Nb achats', 'Total acheté (FCFA)', 'Dernier achat'],
+        rows,
+        totals: ['TOTAL', '', '', '', '', total, ''],
       }
     }
   }
