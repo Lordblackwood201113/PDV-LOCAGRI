@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { StockOverview, AddStockForm, AdjustStockForm, StockHistory } from '@/components/stock'
+import { DonationForm, DonationsList } from '@/components/donations'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { PackageX } from 'lucide-react'
+import { PackageX, Gift } from 'lucide-react'
 
 export function StockPage() {
   const [activeTab, setActiveTab] = useState('overview')
@@ -48,10 +50,13 @@ export function StockPage() {
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">Gestion du Stock</h2>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 h-auto">
+          <TabsList className="grid w-full grid-cols-4 h-auto">
             <TabsTrigger value="overview" className="text-xs sm:text-sm py-2">Vue d'ensemble</TabsTrigger>
             <TabsTrigger value="movements" disabled={!canManageStock} className="text-xs sm:text-sm py-2">
               Mouvements
+            </TabsTrigger>
+            <TabsTrigger value="donations" disabled={!canManageStock} className="text-xs sm:text-sm py-2">
+              Dons
             </TabsTrigger>
             <TabsTrigger value="history" className="text-xs sm:text-sm py-2">Historique</TabsTrigger>
           </TabsList>
@@ -71,6 +76,33 @@ export function StockPage() {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <p>Vous n'avez pas les permissions pour gérer le stock.</p>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Onglet Dons (sortie de stock sans encaissement) */}
+          <TabsContent value="donations" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+            {canManageStock ? (
+              <div className="grid gap-3 sm:gap-4 md:grid-cols-2 items-start">
+                <Card className="border-locagri-accent/30">
+                  <CardHeader className="p-3 sm:p-6">
+                    <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                      <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-accent" />
+                      Faire un don
+                    </CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
+                      Sortie de stock sans encaissement (aucun argent en caisse)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+                    <DonationForm />
+                  </CardContent>
+                </Card>
+                <DonationsList />
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Vous n'avez pas les permissions pour gérer les dons.</p>
               </div>
             )}
           </TabsContent>

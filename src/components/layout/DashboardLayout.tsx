@@ -1,7 +1,17 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Sidebar, type Page } from './Sidebar'
-import { Menu } from 'lucide-react'
+import { Menu, Gift } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { DonationForm } from '@/components/donations'
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -23,6 +33,7 @@ export function DashboardLayout({
   pageDescription,
 }: DashboardLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [donationOpen, setDonationOpen] = useState(false)
 
   // Titres par défaut selon la page
   const defaultTitles: Record<Page, { title: string; description: string }> = {
@@ -71,21 +82,49 @@ export function DashboardLayout({
             </div>
           </div>
 
-          {/* Date */}
-          <div className="text-right hidden md:block shrink-0">
-            <p className="text-sm font-medium text-gray-900">
-              {new Date().toLocaleDateString('fr-FR', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-              })}
-            </p>
-            <p className="text-xs text-gray-500">
-              {new Date().toLocaleTimeString('fr-FR', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </p>
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Faire un don — action globale, tous rôles, indépendante de la caisse */}
+            <Dialog open={donationOpen} onOpenChange={setDonationOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-locagri-accent/40 text-locagri-accent hover:bg-locagri-accent/10 h-8 sm:h-9 px-2 sm:px-3"
+                >
+                  <Gift className="w-4 h-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline text-xs sm:text-sm">Faire un don</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Gift className="w-5 h-5 text-locagri-accent" />
+                    Faire un don
+                  </DialogTitle>
+                  <DialogDescription>
+                    Sortie de stock sans encaissement. Indiquez la personne qui effectue le don.
+                  </DialogDescription>
+                </DialogHeader>
+                <DonationForm onSuccess={() => setDonationOpen(false)} />
+              </DialogContent>
+            </Dialog>
+
+            {/* Date */}
+            <div className="text-right hidden md:block">
+              <p className="text-sm font-medium text-gray-900">
+                {new Date().toLocaleDateString('fr-FR', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                })}
+              </p>
+              <p className="text-xs text-gray-500">
+                {new Date().toLocaleTimeString('fr-FR', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </p>
+            </div>
           </div>
         </header>
 

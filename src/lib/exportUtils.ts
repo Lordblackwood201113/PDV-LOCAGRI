@@ -23,7 +23,7 @@ export interface StockMovementExportData {
   date: number
   productName: string
   productReference?: string
-  type: 'in' | 'out' | 'adjustment'
+  type: 'in' | 'out' | 'adjustment' | 'donation'
   quantity: number
   reason: string
   userName: string
@@ -138,6 +138,7 @@ export function exportStockMovementsToExcel(
     in: 'Entrée',
     out: 'Sortie',
     adjustment: 'Ajustement',
+    donation: 'Don',
   }
 
   const data = movements.map((m) => ({
@@ -157,6 +158,7 @@ export function exportStockMovementsToExcel(
   // Add summary row
   const totalIn = movements.filter(m => m.type === 'in').reduce((sum, m) => sum + m.quantity, 0)
   const totalOut = movements.filter(m => m.type === 'out').reduce((sum, m) => sum + m.quantity, 0)
+  const totalDonations = movements.filter(m => m.type === 'donation').reduce((sum, m) => sum + m.quantity, 0)
 
   data.push({
     'Référence': '',
@@ -165,7 +167,7 @@ export function exportStockMovementsToExcel(
     'Produit': 'RÉSUMÉ',
     'Type': '',
     'Quantité': 0,
-    'Motif': `Entrées: ${totalIn} | Sorties: ${totalOut} | Net: ${totalIn - totalOut}`,
+    'Motif': `Entrées: ${totalIn} | Sorties: ${totalOut} | Dons: ${totalDonations} | Net: ${totalIn - totalOut - totalDonations}`,
     'Réf. Vente': '',
     'Stock avant': 0,
     'Stock après': 0,

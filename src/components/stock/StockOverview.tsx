@@ -144,7 +144,7 @@ export function StockOverview() {
             <CardTitle className="text-sm sm:text-base">Mouvements (30 derniers jours)</CardTitle>
           </CardHeader>
           <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-center">
               <div className="p-2 sm:p-3 bg-locagri-success/10 rounded-lg">
                 <p className="text-lg sm:text-2xl font-bold text-locagri-primary">+{stockStats.last30Days.totalIn}</p>
                 <p className="text-[10px] sm:text-xs text-muted-foreground">Entrées</p>
@@ -152,6 +152,10 @@ export function StockOverview() {
               <div className="p-2 sm:p-3 bg-red-50 rounded-lg">
                 <p className="text-lg sm:text-2xl font-bold text-red-600">-{stockStats.last30Days.totalOut}</p>
                 <p className="text-[10px] sm:text-xs text-muted-foreground">Sorties</p>
+              </div>
+              <div className="p-2 sm:p-3 bg-locagri-accent/10 rounded-lg">
+                <p className="text-lg sm:text-2xl font-bold text-locagri-accent">-{stockStats.last30Days.totalDonations ?? 0}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Dons</p>
               </div>
               <div className={`p-2 sm:p-3 rounded-lg ${stockStats.last30Days.netChange >= 0 ? 'bg-blue-50' : 'bg-orange-50'}`}>
                 <p className={`text-lg sm:text-2xl font-bold ${stockStats.last30Days.netChange >= 0 ? 'text-blue-600' : 'text-locagri-accent'}`}>

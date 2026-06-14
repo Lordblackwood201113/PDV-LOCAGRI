@@ -61,7 +61,7 @@ const exportOptions: { type: ExportType; icon: React.ReactNode; description: str
   {
     type: 'allMovements',
     icon: <ArrowLeftRight className="w-4 h-4" />,
-    description: 'Entrées, sorties et ajustements',
+    description: 'Entrées, sorties, ajustements et dons',
   },
 ]
 

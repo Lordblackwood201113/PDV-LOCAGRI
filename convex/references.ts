@@ -5,7 +5,7 @@ import { mutation, query, internalMutation } from "./_generated/server";
 // TYPES DE RÉFÉRENCES
 // ============================================
 
-type ReferenceType = "product" | "client" | "sale" | "movement" | "payment" | "log";
+type ReferenceType = "product" | "client" | "sale" | "movement" | "payment" | "donation" | "log";
 
 // Préfixes pour chaque type
 const PREFIXES: Record<ReferenceType, string> = {
@@ -14,11 +14,12 @@ const PREFIXES: Record<ReferenceType, string> = {
   sale: "VNT",
   movement: "MVT",
   payment: "REG",
+  donation: "DON",
   log: "LOG",
 };
 
 // Types dont la référence inclut la date (compteur quotidien)
-const DATED_TYPES: ReferenceType[] = ["sale", "movement", "payment", "log"];
+const DATED_TYPES: ReferenceType[] = ["sale", "movement", "payment", "donation", "log"];
 
 // ============================================
 // FONCTIONS UTILITAIRES (internes)
@@ -66,6 +67,7 @@ export const getNextReference = internalMutation({
       v.literal("sale"),
       v.literal("movement"),
       v.literal("payment"),
+      v.literal("donation"),
       v.literal("log")
     ),
   },

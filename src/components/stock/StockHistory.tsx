@@ -12,9 +12,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { Id } from '../../../convex/_generated/dataModel'
-import { History, PackagePlus, ShoppingCart, ClipboardEdit, FileText, Inbox } from 'lucide-react'
+import { History, PackagePlus, ShoppingCart, ClipboardEdit, FileText, Inbox, Gift } from 'lucide-react'
 
-type MovementType = 'all' | 'in' | 'out' | 'adjustment'
+type MovementType = 'all' | 'in' | 'out' | 'adjustment' | 'donation'
 
 export function StockHistory() {
   const [filter, setFilter] = useState<MovementType>('all')
@@ -48,6 +48,7 @@ export function StockHistory() {
     if (filter === 'in') return movement.type === 'in'
     if (filter === 'out') return movement.type === 'out'
     if (filter === 'adjustment') return movement.type === 'adjustment'
+    if (filter === 'donation') return movement.type === 'donation'
     return true
   }).slice(0, limit)
 
@@ -71,6 +72,12 @@ export function StockHistory() {
             {quantity >= 0 ? '+' : ''}{quantity} Ajustement
           </Badge>
         )
+      case 'donation':
+        return (
+          <Badge className="bg-locagri-accent text-[10px] sm:text-xs">
+            -{quantity} Don
+          </Badge>
+        )
       default:
         return <Badge variant="outline" className="text-[10px] sm:text-xs">{type}</Badge>
     }
@@ -84,6 +91,8 @@ export function StockHistory() {
         return <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
       case 'adjustment':
         return <ClipboardEdit className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-accent" />
+      case 'donation':
+        return <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-accent" />
       default:
         return <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-slate-500" />
     }
@@ -146,6 +155,7 @@ export function StockHistory() {
                 <SelectItem value="in">Entrées</SelectItem>
                 <SelectItem value="out">Sorties/Ventes</SelectItem>
                 <SelectItem value="adjustment">Ajustements</SelectItem>
+                <SelectItem value="donation">Dons</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -198,6 +208,7 @@ export function StockHistory() {
               if (filter === 'in') return m.type === 'in'
               if (filter === 'out') return m.type === 'out'
               if (filter === 'adjustment') return m.type === 'adjustment'
+              if (filter === 'donation') return m.type === 'donation'
               return true
             }).length && (
               <Button
