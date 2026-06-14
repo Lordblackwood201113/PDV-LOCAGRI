@@ -13,6 +13,7 @@ import type * as assistant from "../assistant.js";
 import type * as audit from "../audit.js";
 import type * as cashSessions from "../cashSessions.js";
 import type * as clients from "../clients.js";
+import type * as conversions from "../conversions.js";
 import type * as donations from "../donations.js";
 import type * as expenses from "../expenses.js";
 import type * as products from "../products.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   audit: typeof audit;
   cashSessions: typeof cashSessions;
   clients: typeof clients;
+  conversions: typeof conversions;
   donations: typeof donations;
   expenses: typeof expenses;
   products: typeof products;

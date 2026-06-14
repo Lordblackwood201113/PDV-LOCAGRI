@@ -71,6 +71,7 @@ const MOVEMENT_TYPE: Record<string, string> = {
   out: 'Sortie',
   adjustment: 'Ajustement',
   donation: 'Don',
+  conversion: 'Conversion',
 }
 const SAFE_TX_TYPE: Record<string, string> = {
   initial: 'Solde initial',
@@ -120,7 +121,7 @@ async function buildReport(
       const movements = await convex.query(api.stock.getStockHistory, {
         startDate: startDate ? dayStartMs(startDate) : undefined,
         endDate: endDate ? dayEndMs(endDate) : undefined,
-        type: p.type as 'in' | 'out' | 'adjustment' | 'donation' | undefined,
+        type: p.type as 'in' | 'out' | 'adjustment' | 'donation' | 'conversion' | undefined,
       })
       const rows: Cell[][] = movements.map((m) => [
         m.reference ?? '-',
