@@ -19,7 +19,7 @@ export function SalesPage() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center">
-          <div className="w-10 h-10 border-4 border-[#7ABE4E] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <div className="w-10 h-10 border-4 border-locagri-success border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-slate-500">Chargement...</p>
         </div>
       </div>
@@ -79,21 +79,21 @@ function SalesContent() {
     <div className="flex flex-col h-full overflow-hidden">
       {/* Session status bar */}
       {sessionData && (
-        <div className="bg-[#016124] text-white px-3 sm:px-6 py-2 flex-shrink-0">
+        <div className="bg-locagri-primary text-white px-3 sm:px-6 py-2 shrink-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 bg-[#7ABE4E] rounded-full animate-pulse" />
+                <span className="w-2 h-2 bg-locagri-success rounded-full animate-pulse" />
                 Caisse ouverte
               </span>
-              <span className="text-[#7ABE4E]/80 hidden sm:inline">
+              <span className="text-locagri-success/80 hidden sm:inline">
                 Ouvert à {new Date(sessionData.openedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
               </span>
-              <span className="text-[#7ABE4E]/80">
+              <span className="text-locagri-success/80">
                 Fond: {formatPrice(sessionData.openingAmount)} F
               </span>
               {withdrawnExpenses && withdrawnExpenses.total > 0 && (
-                <span className="text-[#CF761C]">
+                <span className="text-locagri-accent">
                   <Wallet className="w-3 h-3 inline mr-1" />
                   -{formatPrice(withdrawnExpenses.total)} F
                 </span>
@@ -101,7 +101,7 @@ function SalesContent() {
             </div>
             <button
               onClick={openCloseModal}
-              className="text-xs sm:text-sm font-medium text-[#7ABE4E]/90 hover:text-white transition-colors self-end sm:self-auto"
+              className="text-xs sm:text-sm font-medium text-locagri-success/90 hover:text-white transition-colors self-end sm:self-auto"
             >
               Clôturer
             </button>
@@ -226,7 +226,7 @@ function ClosedSessionSummary({ session }: ClosedSessionSummaryProps) {
           onClick={handleReopenSession}
           disabled={isReopening}
           variant="outline"
-          className="mt-4 border-[#016124] text-[#016124] hover:bg-[#016124]/10 text-sm"
+          className="mt-4 border-locagri-primary text-locagri-primary hover:bg-locagri-primary/10 text-sm"
         >
           <RotateCcw className={`w-4 h-4 mr-2 ${isReopening ? 'animate-spin' : ''}`} />
           {isReopening ? 'Réouverture...' : 'Rouvrir la caisse'}
@@ -267,25 +267,25 @@ function ClosedSessionSummary({ session }: ClosedSessionSummaryProps) {
           {session.totalCashSales !== undefined && (
             <div className="flex justify-between py-2 border-t border-gray-100">
               <span className="text-gray-500 flex items-center gap-2">
-                <div className="w-2 h-2 bg-[#7ABE4E] rounded-full flex-shrink-0" />
+                <div className="w-2 h-2 bg-locagri-success rounded-full shrink-0" />
                 <span className="truncate">Espèces</span>
               </span>
-              <span className="font-semibold text-[#016124] whitespace-nowrap">+{formatPrice(session.totalCashSales)} F</span>
+              <span className="font-semibold text-locagri-primary whitespace-nowrap">+{formatPrice(session.totalCashSales)} F</span>
             </div>
           )}
           {session.totalMobileSales !== undefined && (
             <div className="flex justify-between py-2 border-t border-gray-100">
               <span className="text-gray-500 flex items-center gap-2">
-                <Smartphone className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                <Smartphone className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                 <span className="truncate">Mobile</span>
               </span>
-              <span className="font-semibold text-[#CF761C] whitespace-nowrap">{formatPrice(session.totalMobileSales)} F</span>
+              <span className="font-semibold text-locagri-accent whitespace-nowrap">{formatPrice(session.totalMobileSales)} F</span>
             </div>
           )}
           {withdrawnExpenses && withdrawnExpenses.total > 0 && (
             <div className="flex justify-between py-2 border-t border-gray-100">
               <span className="text-gray-500 flex items-center gap-2">
-                <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                 <span className="truncate">Dépenses ({withdrawnExpenses.count})</span>
               </span>
               <span className="font-semibold text-red-600 whitespace-nowrap">-{formatPrice(withdrawnExpenses.total)} F</span>
@@ -308,7 +308,7 @@ function ClosedSessionSummary({ session }: ClosedSessionSummaryProps) {
       {session.discrepancy !== undefined && (
         <div className={`rounded-xl p-4 sm:p-5 shadow-sm border ${
           session.discrepancy === 0
-            ? 'bg-[#7ABE4E]/10 border-[#7ABE4E]/30'
+            ? 'bg-locagri-success/10 border-locagri-success/30'
             : session.discrepancy > 0
               ? 'bg-blue-50 border-blue-200'
               : 'bg-rose-50 border-rose-200'
@@ -316,13 +316,13 @@ function ClosedSessionSummary({ session }: ClosedSessionSummaryProps) {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-3">
               {session.discrepancy === 0 ? (
-                <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-[#016124] flex-shrink-0" />
+                <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-locagri-primary shrink-0" />
               ) : (
-                <AlertCircle className={`w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 ${session.discrepancy > 0 ? 'text-blue-600' : 'text-rose-600'}`} />
+                <AlertCircle className={`w-5 h-5 sm:w-6 sm:h-6 shrink-0 ${session.discrepancy > 0 ? 'text-blue-600' : 'text-rose-600'}`} />
               )}
               <div>
                 <p className={`font-medium text-sm sm:text-base ${
-                  session.discrepancy === 0 ? 'text-[#016124]' : session.discrepancy > 0 ? 'text-blue-700' : 'text-rose-700'
+                  session.discrepancy === 0 ? 'text-locagri-primary' : session.discrepancy > 0 ? 'text-blue-700' : 'text-rose-700'
                 }`}>
                   {session.discrepancy === 0 ? 'Caisse équilibrée' : session.discrepancy > 0 ? 'Excédent' : 'Manquant'}
                 </p>
@@ -343,7 +343,7 @@ function ClosedSessionSummary({ session }: ClosedSessionSummaryProps) {
       {/* Stats */}
       {session.salesCount !== undefined && (
         <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 text-center">
-          <p className="text-3xl sm:text-4xl font-bold text-[#016124]">{session.salesCount}</p>
+          <p className="text-3xl sm:text-4xl font-bold text-locagri-primary">{session.salesCount}</p>
           <p className="text-gray-500 mt-1 text-sm sm:text-base">
             vente{session.salesCount !== 1 ? 's' : ''} réalisée{session.salesCount !== 1 ? 's' : ''} aujourd'hui
           </p>

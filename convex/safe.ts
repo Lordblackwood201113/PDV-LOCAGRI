@@ -62,6 +62,8 @@ export const getTransactionHistory = query({
       v.literal("adjustment"),
       v.literal("bank_deposit")
     )),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -91,6 +93,14 @@ export const getTransactionHistory = query({
         .withIndex("by_date")
         .order("desc")
         .collect();
+    }
+
+    // Filtrer par dates (timestamps ms) AVANT la limite
+    if (args.startDate !== undefined) {
+      transactions = transactions.filter((t) => t.date >= args.startDate!);
+    }
+    if (args.endDate !== undefined) {
+      transactions = transactions.filter((t) => t.date <= args.endDate!);
     }
 
     if (args.limit) {

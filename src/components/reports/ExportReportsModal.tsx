@@ -201,10 +201,10 @@ export function ExportReportsModal() {
           <span className="hidden sm:inline">Exporter</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-125 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <Download className="w-5 h-5 text-[#016124]" />
+            <Download className="w-5 h-5 text-locagri-primary" />
             Exporter les rapports
           </DialogTitle>
           <DialogDescription className="text-sm">
@@ -316,17 +316,17 @@ export function ExportReportsModal() {
                     variant="outline"
                     className={cn(
                       'h-auto py-3 px-4 justify-start flex-col items-start gap-1 text-left',
-                      'hover:border-[#016124] hover:bg-[#016124]/5',
-                      isLoading && 'border-[#016124] bg-[#016124]/5'
+                      'hover:border-locagri-primary hover:bg-locagri-primary/5',
+                      isLoading && 'border-locagri-primary bg-locagri-primary/5'
                     )}
                     onClick={() => handleExport(option.type)}
                     disabled={isExporting || !dateRange.from || !dateRange.to}
                   >
                     <div className="flex items-center gap-2 w-full">
                       {isLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-[#016124]" />
+                        <Loader2 className="w-4 h-4 animate-spin text-locagri-primary" />
                       ) : (
-                        <span className="text-[#016124]">{option.icon}</span>
+                        <span className="text-locagri-primary">{option.icon}</span>
                       )}
                       <span className="font-medium text-sm">
                         {exportTypeLabels[option.type]}

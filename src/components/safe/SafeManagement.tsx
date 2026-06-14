@@ -296,7 +296,7 @@ export function SafeManagement() {
   if (safeStatus === undefined || currentUser === undefined) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="w-8 h-8 border-4 border-[#016124] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-locagri-primary border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -319,8 +319,8 @@ export function SafeManagement() {
       <div className="p-6 max-w-2xl mx-auto">
         <Card>
           <CardHeader className="text-center">
-            <div className="w-16 h-16 bg-[#016124]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Vault className="w-8 h-8 text-[#016124]" />
+            <div className="w-16 h-16 bg-locagri-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Vault className="w-8 h-8 text-locagri-primary" />
             </div>
             <CardTitle>Initialiser le Coffre</CardTitle>
             <CardDescription>
@@ -330,7 +330,7 @@ export function SafeManagement() {
           <CardContent>
             {currentUser.role === 'admin' ? (
               <Button
-                className="w-full bg-[#016124] hover:bg-[#017a2e]"
+                className="w-full bg-locagri-primary hover:bg-locagri-primary-light"
                 onClick={() => setInitDialogOpen(true)}
               >
                 Configurer le coffre
@@ -372,7 +372,7 @@ export function SafeManagement() {
               <Button
                 onClick={handleInitialize}
                 disabled={isSubmitting || !initAmount}
-                className="bg-[#016124] hover:bg-[#017a2e]"
+                className="bg-locagri-primary hover:bg-locagri-primary-light"
               >
                 {isSubmitting ? 'Initialisation...' : 'Initialiser'}
               </Button>
@@ -391,10 +391,10 @@ export function SafeManagement() {
       <h2 className="text-xl sm:text-2xl font-bold text-foreground">Gestion du Coffre</h2>
 
       {/* En-tête avec solde */}
-      <div className="bg-gradient-to-r from-[#016124] to-[#017a2e] rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white">
+      <div className="bg-linear-to-r from-locagri-primary to-locagri-primary-light rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-14 sm:h-14 bg-white/20 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 sm:w-14 sm:h-14 bg-white/20 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0">
               <Vault className="w-5 h-5 sm:w-7 sm:h-7" />
             </div>
             <div>
@@ -436,10 +436,10 @@ export function SafeManagement() {
         <Card>
           <CardHeader className="p-3 sm:p-6">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <UserCheck className="w-4 h-4 sm:w-5 sm:h-5 text-[#016124]" />
+              <UserCheck className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-primary" />
               <span className="truncate">Demandes de fond de caisse</span>
               {pendingFundCount > 0 && (
-                <Badge className="bg-[#CF761C] ml-auto text-[10px] sm:text-xs">{pendingFundCount}</Badge>
+                <Badge className="bg-locagri-accent ml-auto text-[10px] sm:text-xs">{pendingFundCount}</Badge>
               )}
             </CardTitle>
           </CardHeader>
@@ -458,12 +458,12 @@ export function SafeManagement() {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-medium text-gray-900 text-sm sm:text-base truncate">{request.requesterName}</span>
-                      <span className="text-[10px] sm:text-xs text-gray-500 flex-shrink-0 ml-2">{formatTime(request.requestedAt)}</span>
+                      <span className="text-[10px] sm:text-xs text-gray-500 shrink-0 ml-2">{formatTime(request.requestedAt)}</span>
                     </div>
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        className="flex-1 bg-[#7ABE4E] hover:bg-[#6aa842] text-xs sm:text-sm h-8"
+                        className="flex-1 bg-locagri-success hover:bg-[#6aa842] text-xs sm:text-sm h-8"
                         onClick={() => openFundDialog(request._id, request.requesterName)}
                       >
                         <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
@@ -490,10 +490,10 @@ export function SafeManagement() {
         <Card>
           <CardHeader className="p-3 sm:p-6">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <ArrowUpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-[#7ABE4E]" />
+              <ArrowUpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-success" />
               <span className="truncate">Versements en attente</span>
               {pendingDepositCount > 0 && (
-                <Badge className="bg-[#7ABE4E] ml-auto text-[10px] sm:text-xs">{pendingDepositCount}</Badge>
+                <Badge className="bg-locagri-success ml-auto text-[10px] sm:text-xs">{pendingDepositCount}</Badge>
               )}
             </CardTitle>
           </CardHeader>
@@ -508,11 +508,11 @@ export function SafeManagement() {
                 {pendingDeposits?.map((deposit) => (
                   <div
                     key={deposit._id}
-                    className="p-3 sm:p-4 bg-[#7ABE4E]/10 rounded-lg border border-[#7ABE4E]/30"
+                    className="p-3 sm:p-4 bg-locagri-success/10 rounded-lg border border-locagri-success/30"
                   >
                     <div className="flex items-center justify-between mb-2 gap-2">
                       <span className="font-medium text-gray-900 text-sm sm:text-base truncate">{deposit.cashierName}</span>
-                      <span className="font-bold text-[#016124] text-sm sm:text-base flex-shrink-0">
+                      <span className="font-bold text-locagri-primary text-sm sm:text-base shrink-0">
                         {formatPrice(deposit.expectedAmount)} F
                       </span>
                     </div>
@@ -522,7 +522,7 @@ export function SafeManagement() {
                       </span>
                       <Button
                         size="sm"
-                        className="bg-[#016124] hover:bg-[#017a2e] text-xs sm:text-sm h-8"
+                        className="bg-locagri-primary hover:bg-locagri-primary-light text-xs sm:text-sm h-8"
                         onClick={() => openDepositDialog(deposit._id, deposit.expectedAmount, deposit.cashierName)}
                       >
                         <ArrowUpCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
@@ -591,7 +591,7 @@ export function SafeManagement() {
                         {formatDate(tx.date)}
                       </span>
                     </div>
-                    <span className={`font-semibold text-sm sm:text-base flex-shrink-0 ${
+                    <span className={`font-semibold text-sm sm:text-base shrink-0 ${
                       tx.newBalance < tx.previousBalance ? 'text-red-600' : 'text-green-600'
                     }`}>
                       {tx.newBalance < tx.previousBalance ? '-' : '+'}{formatPrice(Math.abs(tx.amount))} F
@@ -642,7 +642,7 @@ export function SafeManagement() {
             <Button
               onClick={handleAdjust}
               disabled={isSubmitting || !adjustAmount || !adjustReason.trim()}
-              className="bg-[#016124] hover:bg-[#017a2e]"
+              className="bg-locagri-primary hover:bg-locagri-primary-light"
             >
               {isSubmitting ? 'Ajustement...' : 'Confirmer'}
             </Button>
@@ -679,7 +679,7 @@ export function SafeManagement() {
             </div>
             {fundAmount && parseInt(fundAmount) > safeStatus.currentBalance && (
               <div className="flex items-center gap-2 p-3 bg-orange-50 rounded-lg text-orange-700 text-sm">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>Le montant dépasse le solde du coffre</span>
               </div>
             )}
@@ -691,7 +691,7 @@ export function SafeManagement() {
             <Button
               onClick={handleApproveFund}
               disabled={isSubmitting || !fundAmount}
-              className="bg-[#7ABE4E] hover:bg-[#6aa842]"
+              className="bg-locagri-success hover:bg-[#6aa842]"
             >
               {isSubmitting ? 'Validation...' : 'Valider'}
             </Button>
@@ -759,7 +759,7 @@ export function SafeManagement() {
             {depositAmount && parseInt(depositAmount) !== selectedDepositExpected && (
               <>
                 <div className="flex items-center gap-2 p-3 bg-orange-50 rounded-lg text-orange-700 text-sm">
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
                   <span>
                     Écart de {formatPrice(parseInt(depositAmount) - selectedDepositExpected)} FCFA
                   </span>
@@ -782,7 +782,7 @@ export function SafeManagement() {
             <Button
               onClick={handleConfirmDeposit}
               disabled={isSubmitting || !depositAmount || (parseInt(depositAmount) !== selectedDepositExpected && !depositNote.trim())}
-              className="bg-[#016124] hover:bg-[#017a2e]"
+              className="bg-locagri-primary hover:bg-locagri-primary-light"
             >
               {isSubmitting ? 'Confirmation...' : 'Confirmer le versement'}
             </Button>
@@ -795,7 +795,7 @@ export function SafeManagement() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Landmark className="w-5 h-5 text-[#016124]" />
+              <Landmark className="w-5 h-5 text-locagri-primary" />
               Versement sur le compte de l'entreprise
             </DialogTitle>
             <DialogDescription>
@@ -822,15 +822,15 @@ export function SafeManagement() {
             </div>
             {bankAmount && parseInt(bankAmount) > safeStatus.currentBalance && (
               <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg text-red-700 text-sm">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>Le montant dépasse le solde du coffre</span>
               </div>
             )}
             {bankAmount && parseInt(bankAmount) > 0 && parseInt(bankAmount) <= safeStatus.currentBalance && (
-              <div className="p-3 bg-[#016124]/5 rounded-lg">
+              <div className="p-3 bg-locagri-primary/5 rounded-lg">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Solde après versement</span>
-                  <span className="font-medium text-[#016124]">
+                  <span className="font-medium text-locagri-primary">
                     {formatPrice(safeStatus.currentBalance - parseInt(bankAmount))} FCFA
                   </span>
                 </div>
@@ -861,7 +861,7 @@ export function SafeManagement() {
             <Button
               onClick={handleBankDeposit}
               disabled={isSubmitting || !bankAmount || parseInt(bankAmount) <= 0 || parseInt(bankAmount) > safeStatus.currentBalance}
-              className="bg-[#016124] hover:bg-[#017a2e]"
+              className="bg-locagri-primary hover:bg-locagri-primary-light"
             >
               {isSubmitting ? 'Versement...' : 'Confirmer le versement'}
             </Button>

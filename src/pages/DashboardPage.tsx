@@ -85,15 +85,15 @@ function DashboardContent() {
                     {todayStats?.cashCount || 0} vente{(todayStats?.cashCount || 0) > 1 ? 's' : ''}
                   </p>
                 </div>
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#7ABE4E]/10 rounded-xl flex items-center justify-center flex-shrink-0 ml-2">
-                  <Banknote className="w-5 h-5 sm:w-6 sm:h-6 text-[#016124]" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-locagri-success/10 rounded-xl flex items-center justify-center shrink-0 ml-2">
+                  <Banknote className="w-5 h-5 sm:w-6 sm:h-6 text-locagri-primary" />
                 </div>
               </div>
               {todayStats && todayStats.totalAmount > 0 && (
                 <div className="mt-3">
                   <div className="h-1.5 sm:h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-[#7ABE4E] rounded-full transition-all"
+                      className="h-full bg-locagri-success rounded-full transition-all"
                       style={{ width: `${(todayStats.cashAmount / todayStats.totalAmount) * 100}%` }}
                     />
                   </div>
@@ -116,15 +116,15 @@ function DashboardContent() {
                     {todayStats?.mobileCount || 0} vente{(todayStats?.mobileCount || 0) > 1 ? 's' : ''}
                   </p>
                 </div>
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#CF761C]/10 rounded-xl flex items-center justify-center flex-shrink-0 ml-2">
-                  <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-[#CF761C]" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-locagri-accent/10 rounded-xl flex items-center justify-center shrink-0 ml-2">
+                  <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-locagri-accent" />
                 </div>
               </div>
               {todayStats && todayStats.totalAmount > 0 && (
                 <div className="mt-3">
                   <div className="h-1.5 sm:h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-[#CF761C] rounded-full transition-all"
+                      className="h-full bg-locagri-accent rounded-full transition-all"
                       style={{ width: `${(todayStats.mobileAmount / todayStats.totalAmount) * 100}%` }}
                     />
                   </div>
@@ -139,7 +139,7 @@ function DashboardContent() {
             <div className="bg-white rounded-xl p-4 sm:p-5 border border-gray-100">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <p className="text-xs sm:text-sm font-medium text-gray-700">Produits</p>
-                <Package className="w-4 h-4 text-[#016124]" />
+                <Package className="w-4 h-4 text-locagri-primary" />
               </div>
               <div className="space-y-2 sm:space-y-3">
                 {products?.slice(0, 4).map((product) => (
@@ -147,7 +147,7 @@ function DashboardContent() {
                     <span className="text-xs sm:text-sm text-gray-600 truncate flex-1">{product.name}</span>
                     <span className={`text-xs sm:text-sm font-medium whitespace-nowrap ${
                       product.stockQuantity <= product.alertThreshold
-                        ? 'text-[#CF761C]'
+                        ? 'text-locagri-accent'
                         : 'text-gray-900'
                     }`}>
                       {product.stockQuantity} {product.unit}s

@@ -55,7 +55,7 @@ export function SalesChart({ days = 7 }: SalesChartProps) {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <h3 className="font-semibold text-gray-900 flex items-center gap-2 text-sm sm:text-base">
-              <TrendingUp className="w-4 h-4 text-[#016124]" />
+              <TrendingUp className="w-4 h-4 text-locagri-primary" />
               Évolution des ventes
             </h3>
             <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
@@ -69,7 +69,7 @@ export function SalesChart({ days = 7 }: SalesChartProps) {
             <div className="flex items-center gap-2 sm:justify-end">
               <span className="text-[10px] sm:text-xs text-gray-500">{totalCount} ventes</span>
               {trend !== null && (
-                <span className={`text-[10px] sm:text-xs font-medium ${trend >= 0 ? 'text-[#7ABE4E]' : 'text-red-600'}`}>
+                <span className={`text-[10px] sm:text-xs font-medium ${trend >= 0 ? 'text-locagri-success' : 'text-red-600'}`}>
                   {trend >= 0 ? '+' : ''}{trend}%
                 </span>
               )}
@@ -81,11 +81,11 @@ export function SalesChart({ days = 7 }: SalesChartProps) {
       {/* Chart */}
       <div className="px-1 sm:px-2 py-3 sm:py-4">
         {salesEvolution === undefined ? (
-          <div className="h-[150px] sm:h-[200px] flex items-center justify-center">
-            <div className="w-6 h-6 border-2 border-[#7ABE4E] border-t-transparent rounded-full animate-spin" />
+          <div className="h-37.5 sm:h-50 flex items-center justify-center">
+            <div className="w-6 h-6 border-2 border-locagri-success border-t-transparent rounded-full animate-spin" />
           </div>
         ) : salesEvolution.length === 0 ? (
-          <div className="h-[150px] sm:h-[200px] flex items-center justify-center text-gray-400 text-xs sm:text-sm">
+          <div className="h-37.5 sm:h-50 flex items-center justify-center text-gray-400 text-xs sm:text-sm">
             Aucune donnée disponible
           </div>
         ) : (

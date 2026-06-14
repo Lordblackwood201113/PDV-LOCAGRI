@@ -123,7 +123,7 @@ export function AdjustStockForm({ onSuccess }: AdjustStockFormProps) {
     <Card className="border-orange-200">
       <CardHeader className="p-3 sm:p-6">
         <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-          <ClipboardEdit className="w-4 h-4 sm:w-5 sm:h-5 text-[#CF761C]" />
+          <ClipboardEdit className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-accent" />
           Ajustement d'inventaire
         </CardTitle>
         <CardDescription className="text-xs sm:text-sm">
@@ -178,7 +178,7 @@ export function AdjustStockForm({ onSuccess }: AdjustStockFormProps) {
             {selectedProduct && newQuantity && !isNaN(parseInt(newQuantity)) && (
               <div className={`text-xs sm:text-sm p-2 rounded ${
                 parseInt(newQuantity) > currentStock
-                  ? 'bg-[#7ABE4E]/10 text-[#016124]'
+                  ? 'bg-locagri-success/10 text-locagri-primary'
                   : parseInt(newQuantity) < currentStock
                     ? 'bg-red-50 text-red-700'
                     : 'bg-gray-50 text-gray-700'

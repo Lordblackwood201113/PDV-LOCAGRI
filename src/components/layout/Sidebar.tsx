@@ -214,11 +214,11 @@ export function Sidebar({
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative',
                   isActive
-                    ? 'bg-[#016124] text-white shadow-sm font-semibold'
+                    ? 'bg-locagri-primary text-white shadow-sm font-semibold'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 )}
               >
-                <Icon className={cn('w-5 h-5 flex-shrink-0', isActive ? 'text-white' : 'text-gray-400')} />
+                <Icon className={cn('w-5 h-5 shrink-0', isActive ? 'text-white' : 'text-gray-400')} />
                 {/* Mobile: toujours afficher le label, Desktop: selon collapsed */}
                 <span className={cn(
                   'font-medium text-sm',
@@ -227,7 +227,7 @@ export function Sidebar({
                 {/* Badge de notification */}
                 {'badge' in item && item.badge && (
                   <span className={cn(
-                    'absolute flex items-center justify-center text-[10px] font-bold text-white bg-[#CF761C] rounded-full min-w-[18px] h-[18px] px-1',
+                    'absolute flex items-center justify-center text-[10px] font-bold text-white bg-locagri-accent rounded-full min-w-4.5 h-4.5 px-1',
                     collapsed ? 'lg:top-0 lg:right-0 right-3' : 'right-3'
                   )}>
                     {item.badge}
@@ -244,8 +244,8 @@ export function Sidebar({
           'flex items-center gap-3 mb-3',
           collapsed && 'lg:justify-center'
         )}>
-          <div className="w-9 h-9 bg-[#016124]/10 rounded-full flex items-center justify-center flex-shrink-0">
-            <span className="text-sm font-medium text-[#016124]">
+          <div className="w-9 h-9 bg-locagri-primary/10 rounded-full flex items-center justify-center shrink-0">
+            <span className="text-sm font-medium text-locagri-primary">
               {userName?.charAt(0)?.toUpperCase() || 'U'}
             </span>
           </div>

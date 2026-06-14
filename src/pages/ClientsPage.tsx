@@ -116,12 +116,12 @@ export function ClientsPage() {
       <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
-            <Users className="w-5 h-5 sm:w-6 sm:h-6 text-[#016124]" />
+            <Users className="w-5 h-5 sm:w-6 sm:h-6 text-locagri-primary" />
             Répertoire clients
           </h2>
           <Button
             onClick={() => setCreateOpen(true)}
-            className="bg-[#016124] hover:bg-[#017a2e]"
+            className="bg-locagri-primary hover:bg-locagri-primary-light"
           >
             <UserPlus className="w-4 h-4 mr-2" />
             Nouveau client
@@ -130,20 +130,20 @@ export function ClientsPage() {
 
         {/* Récap des créances */}
         {receivables && receivables.totalOutstanding > 0 && (
-          <Card className="border-[#CF761C]/30 bg-[#CF761C]/5">
+          <Card className="border-locagri-accent/30 bg-locagri-accent/5">
             <CardContent className="p-3 sm:p-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-[#CF761C]/15 flex items-center justify-center flex-shrink-0">
-                  <Wallet className="w-5 h-5 text-[#CF761C]" />
+                <div className="w-10 h-10 rounded-full bg-locagri-accent/15 flex items-center justify-center shrink-0">
+                  <Wallet className="w-5 h-5 text-locagri-accent" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Total des créances</p>
-                  <p className="text-lg sm:text-xl font-bold text-[#CF761C]">
+                  <p className="text-lg sm:text-xl font-bold text-locagri-accent">
                     {formatPrice(receivables.totalOutstanding)} FCFA
                   </p>
                 </div>
               </div>
-              <p className="text-xs sm:text-sm text-muted-foreground text-right flex-shrink-0">
+              <p className="text-xs sm:text-sm text-muted-foreground text-right shrink-0">
                 {receivables.debtorCount} client{receivables.debtorCount > 1 ? 's' : ''} débiteur
                 {receivables.debtorCount > 1 ? 's' : ''}
               </p>
@@ -169,7 +169,7 @@ export function ClientsPage() {
                   variant={showArchived ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setShowArchived((v) => !v)}
-                  className={showArchived ? 'bg-[#CF761C] hover:bg-[#CF761C]/90' : ''}
+                  className={showArchived ? 'bg-locagri-accent hover:bg-locagri-accent/90' : ''}
                 >
                   <Archive className="w-4 h-4 mr-2" />
                   {showArchived ? 'Avec archivés' : 'Actifs seulement'}
@@ -278,7 +278,7 @@ function ClientRow({
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg">
       <div className="flex items-center gap-3 min-w-0">
-        <div className="w-10 h-10 bg-[#016124]/10 rounded-full flex items-center justify-center text-[#016124] font-medium flex-shrink-0">
+        <div className="w-10 h-10 bg-locagri-primary/10 rounded-full flex items-center justify-center text-locagri-primary font-medium shrink-0">
           {client.displayName.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
@@ -291,19 +291,19 @@ function ClientRow({
               variant="outline"
               className={`text-[10px] ${
                 client.type === 'grossiste'
-                  ? 'text-[#016124] border-[#016124]'
+                  ? 'text-locagri-primary border-locagri-primary'
                   : 'text-gray-500 border-gray-300'
               }`}
             >
               {client.type === 'grossiste' ? 'Grossiste' : 'Particulier'}
             </Badge>
             {!client.isActive && (
-              <Badge variant="outline" className="text-[10px] text-[#CF761C] border-[#CF761C]">
+              <Badge variant="outline" className="text-[10px] text-locagri-accent border-locagri-accent">
                 Archivé
               </Badge>
             )}
             {hasDebt && (
-              <Badge className="text-[10px] bg-[#CF761C]/10 text-[#CF761C] border border-[#CF761C]/30 hover:bg-[#CF761C]/10">
+              <Badge className="text-[10px] bg-locagri-accent/10 text-locagri-accent border border-locagri-accent/30 hover:bg-locagri-accent/10">
                 Doit {formatPrice(client.balance ?? 0)} FCFA
               </Badge>
             )}
@@ -330,13 +330,13 @@ function ClientRow({
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto">
+      <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
         {hasDebt && (
           <Button
             size="sm"
             onClick={onPay}
             disabled={isToggling}
-            className="h-8 bg-[#CF761C] hover:bg-[#CF761C]/90 text-white"
+            className="h-8 bg-locagri-accent hover:bg-locagri-accent/90 text-white"
           >
             <HandCoins className="w-3.5 h-3.5 mr-1" />
             Règlement
@@ -407,7 +407,7 @@ function ClientTypeToggle({
             disabled={disabled}
             className={`p-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
               value === t
-                ? 'border-[#016124] bg-[#016124]/5 text-[#016124]'
+                ? 'border-locagri-primary bg-locagri-primary/5 text-locagri-primary'
                 : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
             }`}
           >
@@ -477,10 +477,10 @@ function CreateClientDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[440px]">
+      <DialogContent className="sm:max-w-110">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-[#016124]" />
+            <UserPlus className="w-5 h-5 text-locagri-primary" />
             Nouveau client
           </DialogTitle>
           <DialogDescription>
@@ -571,7 +571,7 @@ function CreateClientDialog({
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="bg-[#016124] hover:bg-[#017a2e]"
+            className="bg-locagri-primary hover:bg-locagri-primary-light"
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">
@@ -641,10 +641,10 @@ function EditClientDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[440px]">
+      <DialogContent className="sm:max-w-110">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Pencil className="w-5 h-5 text-[#016124]" />
+            <Pencil className="w-5 h-5 text-locagri-primary" />
             Éditer {client.displayName}
           </DialogTitle>
           <DialogDescription>Référence {client.reference}</DialogDescription>
@@ -725,7 +725,7 @@ function EditClientDialog({
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="bg-[#016124] hover:bg-[#017a2e]"
+            className="bg-locagri-primary hover:bg-locagri-primary-light"
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">
@@ -793,10 +793,10 @@ function RecordPaymentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[440px]">
+      <DialogContent className="sm:max-w-110">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <HandCoins className="w-5 h-5 text-[#CF761C]" />
+            <HandCoins className="w-5 h-5 text-locagri-accent" />
             Encaisser un règlement
           </DialogTitle>
           <DialogDescription>
@@ -806,9 +806,9 @@ function RecordPaymentDialog({
 
         <div className="space-y-4 py-2">
           {/* Encours */}
-          <div className="flex items-center justify-between p-3 rounded-lg bg-[#CF761C]/5 border border-[#CF761C]/20">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-locagri-accent/5 border border-locagri-accent/20">
             <span className="text-sm text-muted-foreground">Encours actuel</span>
-            <span className="text-lg font-bold text-[#CF761C]">{formatPrice(balance)} FCFA</span>
+            <span className="text-lg font-bold text-locagri-accent">{formatPrice(balance)} FCFA</span>
           </div>
 
           {/* Montant */}
@@ -849,7 +849,7 @@ function RecordPaymentDialog({
                 className={cn(
                   'flex items-center justify-center gap-1.5 p-2.5 rounded-lg border-2 transition-all',
                   method === 'cash'
-                    ? 'border-[#7ABE4E] bg-[#7ABE4E]/5 text-[#016124]'
+                    ? 'border-locagri-success bg-locagri-success/5 text-locagri-primary'
                     : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
                 )}
               >
@@ -863,7 +863,7 @@ function RecordPaymentDialog({
                 className={cn(
                   'flex items-center justify-center gap-1.5 p-2.5 rounded-lg border-2 transition-all',
                   method === 'mobile_money'
-                    ? 'border-[#CF761C] bg-[#CF761C]/5 text-[#CF761C]'
+                    ? 'border-locagri-accent bg-locagri-accent/5 text-locagri-accent'
                     : 'border-gray-100 text-gray-600 hover:border-gray-200 bg-white'
                 )}
               >
@@ -900,7 +900,7 @@ function RecordPaymentDialog({
                 <div key={s._id} className="flex items-center justify-between text-xs">
                   <span className="text-gray-600 truncate">
                     {formatDate(s.date)} · {s.productName}
-                    {s.paymentStatus === 'paid' && <span className="text-[#016124]"> · soldé</span>}
+                    {s.paymentStatus === 'paid' && <span className="text-locagri-primary"> · soldé</span>}
                   </span>
                   <span className="text-gray-900 tabular-nums">
                     {s.paymentStatus === 'paid' ? formatPrice(s.total) : formatPrice(s.amountDue)} F
@@ -909,10 +909,10 @@ function RecordPaymentDialog({
               ))}
               {ledger.payments.slice(0, 4).map((p) => (
                 <div key={p._id} className="flex items-center justify-between text-xs">
-                  <span className="text-[#016124] truncate">
+                  <span className="text-locagri-primary truncate">
                     {formatDate(p.date)} · Règlement {p.method === 'cash' ? 'espèces' : 'Mobile'}
                   </span>
-                  <span className="text-[#016124] tabular-nums">−{formatPrice(p.amount)} F</span>
+                  <span className="text-locagri-primary tabular-nums">−{formatPrice(p.amount)} F</span>
                 </div>
               ))}
             </div>
@@ -926,7 +926,7 @@ function RecordPaymentDialog({
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting || invalid}
-            className="bg-[#CF761C] hover:bg-[#CF761C]/90 text-white"
+            className="bg-locagri-accent hover:bg-locagri-accent/90 text-white"
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">

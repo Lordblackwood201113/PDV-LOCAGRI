@@ -109,7 +109,7 @@ export function AddStockForm({ onSuccess }: AddStockFormProps) {
     <Card>
       <CardHeader className="p-3 sm:p-6">
         <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-          <PackagePlus className="w-4 h-4 sm:w-5 sm:h-5 text-[#016124]" />
+          <PackagePlus className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-primary" />
           Entrée de stock
         </CardTitle>
         <CardDescription className="text-xs sm:text-sm">

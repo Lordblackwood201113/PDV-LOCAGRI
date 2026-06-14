@@ -196,7 +196,7 @@ export function AuditLog() {
                         </p>
                       )}
                     </div>
-                    <div className="text-right flex-shrink-0">
+                    <div className="text-right shrink-0">
                       <p className="text-xs font-medium text-gray-700">{log.actorName}</p>
                       <p className="text-[10px] text-muted-foreground capitalize">{log.actorRole}</p>
                     </div>

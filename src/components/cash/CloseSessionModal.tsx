@@ -116,7 +116,7 @@ export function CloseSessionModal({ open, onOpenChange, onSuccess }: CloseSessio
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
               <Lock className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600" />
             </div>
             Clôture de caisse
@@ -143,7 +143,7 @@ export function CloseSessionModal({ open, onOpenChange, onSuccess }: CloseSessio
 
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">Ventes espèces</span>
-              <span className="font-medium text-[#016124] text-sm sm:text-base">
+              <span className="font-medium text-locagri-primary text-sm sm:text-base">
                 +{formatPrice(expectedData.totalCashSales)}
                 <span className="text-[10px] sm:text-xs text-muted-foreground ml-1">
                   ({expectedData.cashSalesCount})
@@ -153,7 +153,7 @@ export function CloseSessionModal({ open, onOpenChange, onSuccess }: CloseSessio
 
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">Ventes Mobile</span>
-              <span className="font-medium text-[#CF761C] text-sm sm:text-base">
+              <span className="font-medium text-locagri-accent text-sm sm:text-base">
                 {formatPrice(expectedData.totalMobileSales)}
                 <span className="text-[10px] sm:text-xs text-muted-foreground ml-1">
                   ({expectedData.mobileSalesCount})
@@ -169,7 +169,7 @@ export function CloseSessionModal({ open, onOpenChange, onSuccess }: CloseSessio
                     gardée en caisse
                   </span>
                 </span>
-                <span className="font-medium text-[#016124] text-sm sm:text-base">
+                <span className="font-medium text-locagri-primary text-sm sm:text-base">
                   +{formatPrice(expectedData.totalMobileChangeGiven)}
                 </span>
               </div>
@@ -183,7 +183,7 @@ export function CloseSessionModal({ open, onOpenChange, onSuccess }: CloseSessio
                     encaissés en caisse
                   </span>
                 </span>
-                <span className="font-medium text-[#016124] text-sm sm:text-base">
+                <span className="font-medium text-locagri-primary text-sm sm:text-base">
                   +{formatPrice(expectedData.totalCashRepayments)}
                 </span>
               </div>
@@ -236,15 +236,15 @@ export function CloseSessionModal({ open, onOpenChange, onSuccess }: CloseSessio
           {closingAmount !== '' && (
             <div className={`p-3 sm:p-4 rounded-lg text-center ${
               discrepancy === 0
-                ? 'bg-[#7ABE4E]/10 border border-[#7ABE4E]/30'
+                ? 'bg-locagri-success/10 border border-locagri-success/30'
                 : discrepancy > 0
                   ? 'bg-blue-50 border border-blue-200'
                   : 'bg-red-50 border border-red-200'
             }`}>
               {discrepancy === 0 ? (
                 <>
-                  <p className="text-[#016124] font-medium text-sm sm:text-base">Caisse équilibrée</p>
-                  <p className="text-xs sm:text-sm text-[#016124]/80">Aucun écart constaté</p>
+                  <p className="text-locagri-primary font-medium text-sm sm:text-base">Caisse équilibrée</p>
+                  <p className="text-xs sm:text-sm text-locagri-primary/80">Aucun écart constaté</p>
                 </>
               ) : (
                 <>
@@ -272,7 +272,7 @@ export function CloseSessionModal({ open, onOpenChange, onSuccess }: CloseSessio
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Expliquez la raison de cet écart..."
                 disabled={isSubmitting}
-                className="min-h-[60px] sm:min-h-[80px] text-sm"
+                className="min-h-15 sm:min-h-20 text-sm"
               />
               <p className="text-[10px] sm:text-xs text-muted-foreground">
                 Cette justification sera enregistrée dans l'historique

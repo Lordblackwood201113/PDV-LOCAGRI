@@ -262,3 +262,43 @@ export function exportAuditLogsToExcel(
       : ''
   XLSX.writeFile(workbook, `Journal_audit${range}.xlsx`)
 }
+
+// ============================================
+// Export générique (utilisé par l'assistant IA — story 1.6)
+// ============================================
+export type Cell = string | number
+
+export interface GenericExportOptions {
+  sheetName: string
+  headers: string[]
+  rows: Cell[][]
+  totals?: Cell[]
+  filename: string
+}
+
+/** Construit et télécharge un classeur Excel à partir d'en-têtes + lignes. */
+export function exportRowsToExcel(opts: GenericExportOptions): void {
+  const aoa: Cell[][] = [opts.headers, ...opts.rows]
+  if (opts.totals) aoa.push(opts.totals)
+
+  const worksheet = XLSX.utils.aoa_to_sheet(aoa)
+  // Largeur de colonne approximative basée sur le contenu
+  worksheet['!cols'] = opts.headers.map((h, i) => {
+    // reduce plutôt que Math.max(...spread) : un spread d'un argument par ligne
+    // dépasse la limite d'arguments du moteur (RangeError) sur les très gros exports.
+    let maxLen = String(h).length
+    for (const r of opts.rows) {
+      const len = String(r[i] ?? '').length
+      if (len > maxLen) maxLen = len
+    }
+    if (opts.totals) {
+      const len = String(opts.totals[i] ?? '').length
+      if (len > maxLen) maxLen = len
+    }
+    return { wch: Math.min(Math.max(maxLen + 2, 12), 50) }
+  })
+
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, opts.sheetName.slice(0, 31))
+  XLSX.writeFile(workbook, opts.filename)
+}

@@ -115,7 +115,7 @@
 @layer components {
   /* Touch-friendly button for tablet (min 48px touch target) */
   .btn-touch {
-    @apply min-h-[48px] min-w-[48px] text-lg;
+    @apply min-h-12 min-w-12 text-lg;
   }
 
   /* Large touch button for POS actions */
@@ -125,7 +125,7 @@
 
   /* Stock alert styling */
   .stock-low {
-    @apply border-[#CF761C] bg-orange-50;
+    @apply border-locagri-accent bg-orange-50;
   }
 
   .stock-critical {

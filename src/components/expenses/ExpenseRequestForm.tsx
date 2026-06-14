@@ -105,7 +105,7 @@ export function ExpenseRequestForm({ onSuccess }: ExpenseRequestFormProps) {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-[#016124]" />
+            <Receipt className="w-5 h-5 text-locagri-primary" />
             Demande de dépense
           </CardTitle>
         </CardHeader>
@@ -123,7 +123,7 @@ export function ExpenseRequestForm({ onSuccess }: ExpenseRequestFormProps) {
     <Card>
       <CardHeader className="p-3 sm:p-6">
         <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-          <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-[#016124]" />
+          <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-primary" />
           Demande de dépense
         </CardTitle>
         <CardDescription className="text-xs sm:text-sm">
@@ -138,7 +138,7 @@ export function ExpenseRequestForm({ onSuccess }: ExpenseRequestFormProps) {
               <Wallet className="w-3 h-3 sm:w-4 sm:h-4" />
               Disponible en caisse
             </span>
-            <span className="font-semibold text-[#016124] text-sm sm:text-base">
+            <span className="font-semibold text-locagri-primary text-sm sm:text-base">
               {formatPrice(available)} F
             </span>
           </div>
@@ -203,7 +203,7 @@ export function ExpenseRequestForm({ onSuccess }: ExpenseRequestFormProps) {
 
           <Button
             type="submit"
-            className="w-full bg-[#016124] hover:bg-[#017a2e] text-sm sm:text-base h-9 sm:h-10"
+            className="w-full bg-locagri-primary hover:bg-locagri-primary-light text-sm sm:text-base h-9 sm:h-10"
             disabled={isSubmitting || !amount || !reason.trim() || exceedsAvailable || available <= 0}
           >
             {isSubmitting ? (

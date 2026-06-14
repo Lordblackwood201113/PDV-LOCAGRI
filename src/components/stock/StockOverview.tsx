@@ -44,7 +44,7 @@ export function StockOverview() {
       <Card>
         <CardHeader className="pb-2 p-3 sm:p-6 sm:pb-2">
           <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-[#016124]" />
+            <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-primary" />
             Vue d'ensemble
           </CardTitle>
         </CardHeader>
@@ -63,9 +63,9 @@ export function StockOverview() {
               <p className="text-xs sm:text-sm text-muted-foreground">Valeur totale</p>
               <p className="text-sm sm:text-lg font-bold text-primary">{formatPrice(totalStockValue)}</p>
             </div>
-            <div className={`p-2 sm:p-3 rounded-lg text-center ${stockStats.lowStockCount > 0 ? 'bg-orange-100' : 'bg-[#7ABE4E]/20'}`}>
+            <div className={`p-2 sm:p-3 rounded-lg text-center ${stockStats.lowStockCount > 0 ? 'bg-orange-100' : 'bg-locagri-success/20'}`}>
               <p className="text-xs sm:text-sm text-muted-foreground">Alertes</p>
-              <p className={`text-lg sm:text-2xl font-bold ${stockStats.lowStockCount > 0 ? 'text-[#CF761C]' : 'text-[#016124]'}`}>
+              <p className={`text-lg sm:text-2xl font-bold ${stockStats.lowStockCount > 0 ? 'text-locagri-accent' : 'text-locagri-primary'}`}>
                 {stockStats.lowStockCount}
               </p>
               <p className="text-[10px] sm:text-xs text-muted-foreground">stock bas</p>
@@ -99,9 +99,9 @@ export function StockOverview() {
                       {formatPrice(product.price)} / {product.unit}
                     </p>
                   </div>
-                  <div className="text-right flex-shrink-0 ml-2">
+                  <div className="text-right shrink-0 ml-2">
                     <p className={`text-lg sm:text-xl font-bold ${
-                      isCritical ? 'text-red-600' : isLow ? 'text-[#CF761C]' : 'text-[#016124]'
+                      isCritical ? 'text-red-600' : isLow ? 'text-locagri-accent' : 'text-locagri-primary'
                     }`}>
                       {product.stockQuantity}
                     </p>
@@ -113,7 +113,7 @@ export function StockOverview() {
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className={`h-full transition-all duration-500 ${
-                      isCritical ? 'bg-red-500' : isLow ? 'bg-orange-500' : 'bg-[#7ABE4E]'
+                      isCritical ? 'bg-red-500' : isLow ? 'bg-orange-500' : 'bg-locagri-success'
                     }`}
                     style={{ width: `${stockPercentage}%` }}
                   />
@@ -128,7 +128,7 @@ export function StockOverview() {
                   ) : isLow ? (
                     <Badge className="bg-orange-500 text-[10px] sm:text-xs">Stock bas</Badge>
                   ) : (
-                    <Badge className="bg-[#7ABE4E] text-[10px] sm:text-xs">OK</Badge>
+                    <Badge className="bg-locagri-success text-[10px] sm:text-xs">OK</Badge>
                   )}
                 </div>
               </div>
@@ -145,8 +145,8 @@ export function StockOverview() {
           </CardHeader>
           <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
             <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
-              <div className="p-2 sm:p-3 bg-[#7ABE4E]/10 rounded-lg">
-                <p className="text-lg sm:text-2xl font-bold text-[#016124]">+{stockStats.last30Days.totalIn}</p>
+              <div className="p-2 sm:p-3 bg-locagri-success/10 rounded-lg">
+                <p className="text-lg sm:text-2xl font-bold text-locagri-primary">+{stockStats.last30Days.totalIn}</p>
                 <p className="text-[10px] sm:text-xs text-muted-foreground">Entrées</p>
               </div>
               <div className="p-2 sm:p-3 bg-red-50 rounded-lg">
@@ -154,7 +154,7 @@ export function StockOverview() {
                 <p className="text-[10px] sm:text-xs text-muted-foreground">Sorties</p>
               </div>
               <div className={`p-2 sm:p-3 rounded-lg ${stockStats.last30Days.netChange >= 0 ? 'bg-blue-50' : 'bg-orange-50'}`}>
-                <p className={`text-lg sm:text-2xl font-bold ${stockStats.last30Days.netChange >= 0 ? 'text-blue-600' : 'text-[#CF761C]'}`}>
+                <p className={`text-lg sm:text-2xl font-bold ${stockStats.last30Days.netChange >= 0 ? 'text-blue-600' : 'text-locagri-accent'}`}>
                   {stockStats.last30Days.netChange >= 0 ? '+' : ''}{stockStats.last30Days.netChange}
                 </p>
                 <p className="text-[10px] sm:text-xs text-muted-foreground">Net</p>
@@ -166,14 +166,14 @@ export function StockOverview() {
 
       {/* Alertes produits en stock bas */}
       {stockStats.lowStockProducts && stockStats.lowStockProducts.length > 0 && (
-        <Card className="bg-[#CF761C]/10 border-[#CF761C]/30">
+        <Card className="bg-locagri-accent/10 border-locagri-accent/30">
           <CardContent className="p-3 sm:pt-4 sm:p-6">
             <div className="flex items-start gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#CF761C]/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-[#CF761C]" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-locagri-accent/20 rounded-lg flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-accent" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-[#CF761C] text-sm sm:text-base">Réapprovisionnement recommandé</p>
+                <p className="font-medium text-locagri-accent text-sm sm:text-base">Réapprovisionnement recommandé</p>
                 <ul className="text-xs sm:text-sm text-orange-700 mt-1 sm:mt-2 space-y-1">
                   {stockStats.lowStockProducts.map((p) => (
                     <li key={p.id} className="truncate">
