@@ -361,13 +361,13 @@ const TOOLS: AssistantTool[] = [
   {
     name: "get_stock_movements",
     description:
-      "Mouvements de stock sur une période (entrées, sorties, ajustements) : produit, quantité, motif, stock avant/après, utilisateur.",
+      "Mouvements de stock sur une période (entrées, sorties, ajustements, dons) : produit, quantité, motif, stock avant/après, utilisateur.",
     parameters: {
       type: "object",
       properties: {
         startDate: { type: "string", description: "AAAA-MM-JJ" },
         endDate: { type: "string", description: "AAAA-MM-JJ" },
-        type: { type: "string", enum: ["in", "out", "adjustment"] },
+        type: { type: "string", enum: ["in", "out", "adjustment", "donation"] },
         productId: { type: "string", description: "Id produit optionnel" },
         limit: { type: "integer", description: "défaut 100, max 500" },
       },
@@ -378,7 +378,7 @@ const TOOLS: AssistantTool[] = [
       ctx.runQuery(api.stock.getStockHistory, {
         startDate: toMs(a.startDate),
         endDate: toMsEnd(a.endDate),
-        type: a.type as "in" | "out" | "adjustment" | undefined,
+        type: a.type as "in" | "out" | "adjustment" | "donation" | undefined,
         productId: a.productId ? (a.productId as Id<"products">) : undefined,
         limit: num(a.limit, 500) ?? 100,
       }),
@@ -614,7 +614,7 @@ const PREPARE_EXPORT_DEF = {
       type: {
         type: "string",
         description:
-          "Filtre type — stock_movements: in/out/adjustment ; safe_transactions: initial/withdrawal/deposit/adjustment/bank_deposit ; new_clients/inactive_clients: particulier/grossiste",
+          "Filtre type — stock_movements: in/out/adjustment/donation ; safe_transactions: initial/withdrawal/deposit/adjustment/bank_deposit ; new_clients/inactive_clients: particulier/grossiste",
       },
       status: {
         type: "string",
@@ -646,7 +646,7 @@ async function countReportRows(
         await ctx.runQuery(api.stock.getStockHistory, {
           startDate: toMs(p.startDate),
           endDate: toMsEnd(p.endDate),
-          type: p.type as "in" | "out" | "adjustment" | undefined,
+          type: p.type as "in" | "out" | "adjustment" | "donation" | undefined,
         })
       ).length;
     case "receivables":

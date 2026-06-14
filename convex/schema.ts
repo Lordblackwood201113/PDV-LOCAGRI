@@ -12,9 +12,10 @@ export default defineSchema({
       v.literal("sale"),
       v.literal("movement"),
       v.literal("payment"),
+      v.literal("donation"),
       v.literal("log")
     ),
-    date: v.optional(v.string()),   // Format "YYYYMMDD" pour les compteurs quotidiens (sale, movement)
+    date: v.optional(v.string()),   // Format "YYYYMMDD" pour les compteurs quotidiens (sale, movement, payment, donation)
     count: v.number(),              // Dernier numéro utilisé
   })
     .index("by_type", ["type"])
@@ -150,7 +151,8 @@ export default defineSchema({
     type: v.union(
       v.literal("in"),             // Entrée (approvisionnement)
       v.literal("out"),            // Sortie (vente)
-      v.literal("adjustment")      // Ajustement (inventaire)
+      v.literal("adjustment"),     // Ajustement (inventaire)
+      v.literal("donation")        // Don (sortie sans encaissement)
     ),
     quantity: v.number(),          // Quantité (positive)
     reason: v.string(),            // Motif du mouvement
@@ -161,11 +163,44 @@ export default defineSchema({
     // Lien avec vente si applicable
     saleId: v.optional(v.id("sales")),         // ID de la vente associée
     saleReference: v.optional(v.string()),     // Référence vente (dénormalisé)
+    // Lien avec don si applicable
+    donationId: v.optional(v.id("donations")), // ID du don associé
+    donationReference: v.optional(v.string()), // Référence don (dénormalisé)
   })
     .index("by_date", ["date"])
     .index("by_reference", ["reference"])
     .index("by_type", ["type"])
-    .index("by_sale", ["saleId"]),
+    .index("by_sale", ["saleId"])
+    .index("by_donation", ["donationId"]),
+
+  // ============================================
+  // DONS (sorties de stock sans encaissement)
+  // ============================================
+  donations: defineTable({
+    reference: v.string(),         // Code unique: DON-YYYYMMDD-XXXXX
+    date: v.number(),              // Timestamp du don
+    donorName: v.string(),         // Personne de l'entreprise effectuant le don
+    motif: v.optional(v.string()), // Motif du don (optionnel)
+    items: v.array(               // Lignes du don (agrégées : une entrée par produit distinct)
+      v.object({
+        productId: v.id("products"),
+        productName: v.string(),
+        productReference: v.optional(v.string()),
+        quantity: v.number(),          // Quantité donnée (positive)
+        unitValue: v.number(),         // Prix catalogue au moment du don
+        lineValue: v.number(),         // unitValue * quantity (valeur estimée)
+        previousStock: v.number(),     // Stock avant ce don (pour ce produit)
+        newStock: v.number(),          // Stock après ce don (pour ce produit)
+      })
+    ),
+    totalQuantity: v.number(),     // Σ quantity (unités données)
+    totalValue: v.number(),        // Σ lineValue (valeur estimée totale, informative)
+    itemCount: v.number(),         // Nombre de lignes (produits distincts)
+    userId: v.string(),            // ID Clerk de l'opérateur qui enregistre
+    userName: v.string(),          // Nom (dénormalisé)
+  })
+    .index("by_date", ["date"])
+    .index("by_reference", ["reference"]),
 
   // ============================================
   // SESSIONS DE CAISSE

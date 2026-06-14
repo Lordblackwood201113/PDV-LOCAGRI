@@ -8,6 +8,7 @@ import { ExpenseRequestForm, MyExpensesList } from '@/components/expenses'
 import { Lock, Clock, Banknote, Smartphone, CheckCircle, AlertCircle, Receipt, Wallet, RotateCcw } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
+import type { Id } from '../../convex/_generated/dataModel'
 import { toast } from 'sonner'
 
 export function SalesPage() {
@@ -174,7 +175,7 @@ interface ClosedSessionSummaryProps {
 function ClosedSessionSummary({ session }: ClosedSessionSummaryProps) {
   const [isReopening, setIsReopening] = useState(false)
   const withdrawnExpenses = useQuery(api.expenses.getWithdrawnExpensesForSession, {
-    sessionId: session._id as any
+    sessionId: session._id as Id<'cashSessions'>
   })
   const reopenSession = useMutation(api.cashSessions.reopenSession)
 

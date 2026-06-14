@@ -15,7 +15,12 @@ export const getStockHistory = query({
     productId: v.optional(v.id("products")),
     limit: v.optional(v.number()),
     type: v.optional(
-      v.union(v.literal("in"), v.literal("out"), v.literal("adjustment"))
+      v.union(
+        v.literal("in"),
+        v.literal("out"),
+        v.literal("adjustment"),
+        v.literal("donation")
+      )
     ),
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
@@ -137,6 +142,10 @@ export const getStockStats = query({
       .filter((m) => m.type === "out")
       .reduce((sum, m) => sum + m.quantity, 0);
 
+    const totalDonations = recentMovements
+      .filter((m) => m.type === "donation")
+      .reduce((sum, m) => sum + m.quantity, 0);
+
     // Stats globales
     const totalStock = targetProducts.reduce((sum, p) => sum + p.stockQuantity, 0);
     const lowStockProducts = targetProducts.filter(
@@ -157,7 +166,8 @@ export const getStockStats = query({
       last30Days: {
         totalIn,
         totalOut,
-        netChange: totalIn - totalOut,
+        totalDonations,
+        netChange: totalIn - totalOut - totalDonations,
         movementsCount: recentMovements.length,
       },
     };
