@@ -13,9 +13,10 @@ export default defineSchema({
       v.literal("movement"),
       v.literal("payment"),
       v.literal("donation"),
+      v.literal("conversion"),
       v.literal("log")
     ),
-    date: v.optional(v.string()),   // Format "YYYYMMDD" pour les compteurs quotidiens (sale, movement, payment, donation)
+    date: v.optional(v.string()),   // Format "YYYYMMDD" pour les compteurs quotidiens (sale, movement, payment, donation, conversion)
     count: v.number(),              // Dernier numéro utilisé
   })
     .index("by_type", ["type"])
@@ -86,12 +87,16 @@ export default defineSchema({
     alertThreshold: v.number(),    // Seuil d'alerte stock bas
     unit: v.optional(v.string()),  // Unité de mesure (ex: "sac", "kg", "pièce") - optional for legacy data
     isActive: v.optional(v.boolean()), // Produit actif ou archivé - optional for legacy data
+    // Déconditionnement : ce produit (ex: sachet) est issu de la conversion d'un autre produit (ex: sac)
+    parentProductId: v.optional(v.id("products")), // Produit source dont celui-ci est issu (null = produit autonome)
+    conversionRatio: v.optional(v.number()),       // Nb d'unités de CE produit obtenues à partir d'1 unité du parent (entier > 0)
     createdAt: v.optional(v.number()), // Date de création - optional for legacy data
     updatedAt: v.number(),         // Timestamp dernière modification
   })
     .index("by_active", ["isActive"])
     .index("by_name", ["name"])
-    .index("by_reference", ["reference"]),
+    .index("by_reference", ["reference"])
+    .index("by_parent", ["parentProductId"]),
 
   // ============================================
   // VENTES
@@ -152,7 +157,8 @@ export default defineSchema({
       v.literal("in"),             // Entrée (approvisionnement)
       v.literal("out"),            // Sortie (vente)
       v.literal("adjustment"),     // Ajustement (inventaire)
-      v.literal("donation")        // Don (sortie sans encaissement)
+      v.literal("donation"),       // Don (sortie sans encaissement)
+      v.literal("conversion")      // Conversion (déconditionnement : sortie source / entrée cible)
     ),
     quantity: v.number(),          // Quantité (positive)
     reason: v.string(),            // Motif du mouvement
@@ -166,12 +172,16 @@ export default defineSchema({
     // Lien avec don si applicable
     donationId: v.optional(v.id("donations")), // ID du don associé
     donationReference: v.optional(v.string()), // Référence don (dénormalisé)
+    // Lien avec conversion si applicable (les 2 jambes partagent le même conversionId)
+    conversionId: v.optional(v.id("conversions")),   // ID de la conversion associée
+    conversionReference: v.optional(v.string()),     // Référence conversion (dénormalisé)
   })
     .index("by_date", ["date"])
     .index("by_reference", ["reference"])
     .index("by_type", ["type"])
     .index("by_sale", ["saleId"])
-    .index("by_donation", ["donationId"]),
+    .index("by_donation", ["donationId"])
+    .index("by_conversion", ["conversionId"]),
 
   // ============================================
   // DONS (sorties de stock sans encaissement)
@@ -201,6 +211,43 @@ export default defineSchema({
   })
     .index("by_date", ["date"])
     .index("by_reference", ["reference"]),
+
+  // ============================================
+  // CONVERSIONS (déconditionnement : sac → sachets)
+  // ============================================
+  // Une conversion consomme N unités d'un produit source (sac) pour produire
+  // N×ratio unités d'un produit cible (sachet). Transformation interne de stock :
+  // aucune ligne `sales`, aucun encaissement. Traçabilité : 1 en-tête `conversions`
+  // (l'événement) + 2 `stockMovements` `type:"conversion"` (jambe source + jambe cible),
+  // reliés via conversionId/conversionReference.
+  conversions: defineTable({
+    reference: v.string(),                 // Code unique: CNV-YYYYMMDD-XXXXX
+    date: v.number(),                      // Timestamp de la conversion
+    // Produit source (consommé)
+    sourceProductId: v.id("products"),
+    sourceProductName: v.string(),         // Dénormalisé
+    sourceProductReference: v.optional(v.string()),
+    sourceUnit: v.optional(v.string()),    // Unité source au moment de la conversion (dénormalisé)
+    sourceQuantity: v.number(),            // Quantité consommée (positive)
+    sourcePreviousStock: v.number(),       // Stock source avant
+    sourceNewStock: v.number(),            // Stock source après
+    // Produit cible (produit)
+    targetProductId: v.id("products"),
+    targetProductName: v.string(),         // Dénormalisé
+    targetProductReference: v.optional(v.string()),
+    targetUnit: v.optional(v.string()),    // Unité cible au moment de la conversion (dénormalisé)
+    conversionRatio: v.number(),           // Ratio figé au moment de la conversion (entier > 0)
+    targetQuantity: v.number(),            // Quantité produite = sourceQuantity × ratio
+    targetPreviousStock: v.number(),       // Stock cible avant
+    targetNewStock: v.number(),            // Stock cible après
+    note: v.optional(v.string()),          // Note éventuelle
+    userId: v.string(),                    // ID Clerk de l'opérateur
+    userName: v.string(),                  // Nom (dénormalisé)
+  })
+    .index("by_date", ["date"])
+    .index("by_reference", ["reference"])
+    .index("by_source", ["sourceProductId"])
+    .index("by_target", ["targetProductId"]),
 
   // ============================================
   // SESSIONS DE CAISSE

@@ -23,7 +23,7 @@ export interface StockMovementExportData {
   date: number
   productName: string
   productReference?: string
-  type: 'in' | 'out' | 'adjustment' | 'donation'
+  type: 'in' | 'out' | 'adjustment' | 'donation' | 'conversion'
   quantity: number
   reason: string
   userName: string
@@ -139,6 +139,7 @@ export function exportStockMovementsToExcel(
     out: 'Sortie',
     adjustment: 'Ajustement',
     donation: 'Don',
+    conversion: 'Conversion',
   }
 
   const data = movements.map((m) => ({

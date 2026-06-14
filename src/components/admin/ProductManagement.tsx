@@ -15,9 +15,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { toast } from 'sonner'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Package, PackageOpen, AlertTriangle } from 'lucide-react'
+
+// Valeur sentinelle du Select « produit source » = aucun lien de déconditionnement
+const NO_PARENT = '__none__'
 
 export function ProductManagement() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
@@ -30,6 +40,9 @@ export function ProductManagement() {
   const [stockQuantity, setStockQuantity] = useState('')
   const [alertThreshold, setAlertThreshold] = useState('')
   const [unit, setUnit] = useState('sac')
+  // Déconditionnement : produit source (parent) + ratio
+  const [parentProductId, setParentProductId] = useState<string>(NO_PARENT)
+  const [conversionRatio, setConversionRatio] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const products = useQuery(api.products.getAllProducts)
@@ -50,6 +63,8 @@ export function ProductManagement() {
     setStockQuantity('')
     setAlertThreshold('')
     setUnit('sac')
+    setParentProductId(NO_PARENT)
+    setConversionRatio('')
     setEditingProduct(null)
   }
 
@@ -59,6 +74,8 @@ export function ProductManagement() {
     setPrice(product.price.toString())
     setAlertThreshold(product.alertThreshold.toString())
     setUnit(product.unit)
+    setParentProductId(product.parentProductId ?? NO_PARENT)
+    setConversionRatio(product.conversionRatio != null ? product.conversionRatio.toString() : '')
     setEditingProduct(product._id)
     setIsAddDialogOpen(true)
   }
@@ -92,6 +109,17 @@ export function ProductManagement() {
       return
     }
 
+    // Déconditionnement : si un produit source est choisi, le ratio doit être un entier > 0
+    const hasParent = parentProductId !== NO_PARENT
+    const ratioNum = parseInt(conversionRatio)
+    if (hasParent && (isNaN(ratioNum) || ratioNum <= 0)) {
+      toast.error('Le ratio de conversion doit être un entier supérieur à 0')
+      return
+    }
+
+    const parentArg = hasParent ? (parentProductId as Id<'products'>) : undefined
+    const ratioArg = hasParent ? ratioNum : undefined
+
     setIsSubmitting(true)
     try {
       if (editingProduct) {
@@ -102,6 +130,8 @@ export function ProductManagement() {
           price: priceNum,
           alertThreshold: thresholdNum,
           unit: unit.trim(),
+          parentProductId: parentArg,
+          conversionRatio: ratioArg,
         })
         toast.success('Produit mis à jour')
       } else {
@@ -112,6 +142,8 @@ export function ProductManagement() {
           stockQuantity: stockNum,
           alertThreshold: thresholdNum,
           unit: unit.trim(),
+          parentProductId: parentArg,
+          conversionRatio: ratioArg,
         })
         toast.success('Produit ajouté')
       }
@@ -304,6 +336,53 @@ export function ProductManagement() {
                       </Button>
                     ))}
                   </div>
+                </div>
+
+                {/* Déconditionnement : produit issu de la conversion d'un autre produit */}
+                <div className="space-y-1.5 sm:space-y-2 border-t pt-3">
+                  <Label htmlFor="product-parent" className="text-sm">
+                    Issu d'un déconditionnement <span className="text-muted-foreground">(optionnel)</span>
+                  </Label>
+                  <Select
+                    value={parentProductId}
+                    onValueChange={setParentProductId}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger id="product-parent" className="text-sm">
+                      <SelectValue placeholder="Produit source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_PARENT}>Aucun (produit autonome)</SelectItem>
+                      {products
+                        .filter((p) => p._id !== editingProduct && p.isActive)
+                        .map((p) => (
+                          <SelectItem key={p._id} value={p._id}>
+                            {p.name} ({p.unit})
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  {parentProductId !== NO_PARENT && (
+                    <div className="space-y-1.5 pt-1">
+                      <Label htmlFor="product-ratio" className="text-sm">
+                        Unités obtenues pour 1 {products.find((p) => p._id === parentProductId)?.unit ?? 'unité'} *
+                      </Label>
+                      <Input
+                        id="product-ratio"
+                        type="number"
+                        value={conversionRatio}
+                        onChange={(e) => setConversionRatio(e.target.value)}
+                        placeholder="Ex: 5"
+                        min={1}
+                        step={1}
+                        disabled={isSubmitting}
+                        className="text-sm"
+                      />
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">
+                        Le caissier pourra convertir des {products.find((p) => p._id === parentProductId)?.unit ?? 'unités'} en {unit.trim() || 'unités'}.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <DialogFooter>

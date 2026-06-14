@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Sidebar, type Page } from './Sidebar'
-import { Menu, Gift } from 'lucide-react'
+import { Menu, Gift, Repeat } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { DonationForm } from '@/components/donations'
+import { ConvertStockForm } from '@/components/conversions'
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -34,6 +35,7 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [donationOpen, setDonationOpen] = useState(false)
+  const [convertOpen, setConvertOpen] = useState(false)
 
   // Titres par défaut selon la page
   const defaultTitles: Record<Page, { title: string; description: string }> = {
@@ -83,6 +85,32 @@ export function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Convertir — déconditionnement (sac → sachets), tous rôles, indépendant de la caisse */}
+            <Dialog open={convertOpen} onOpenChange={setConvertOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-locagri-primary/40 text-locagri-primary hover:bg-locagri-primary/10 h-8 sm:h-9 px-2 sm:px-3"
+                >
+                  <Repeat className="w-4 h-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline text-xs sm:text-sm">Convertir</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Repeat className="w-5 h-5 text-locagri-primary" />
+                    Convertir du stock
+                  </DialogTitle>
+                  <DialogDescription>
+                    Déconditionnement sans encaissement (ex : 1 sac → 5 sachets). Le stock source baisse, le stock cible augmente.
+                  </DialogDescription>
+                </DialogHeader>
+                <ConvertStockForm onSuccess={() => setConvertOpen(false)} />
+              </DialogContent>
+            </Dialog>
+
             {/* Faire un don — action globale, tous rôles, indépendante de la caisse */}
             <Dialog open={donationOpen} onOpenChange={setDonationOpen}>
               <DialogTrigger asChild>

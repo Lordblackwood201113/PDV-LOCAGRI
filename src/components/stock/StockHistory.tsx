@@ -12,9 +12,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { Id } from '../../../convex/_generated/dataModel'
-import { History, PackagePlus, ShoppingCart, ClipboardEdit, FileText, Inbox, Gift } from 'lucide-react'
+import { History, PackagePlus, ShoppingCart, ClipboardEdit, FileText, Inbox, Gift, Repeat } from 'lucide-react'
 
-type MovementType = 'all' | 'in' | 'out' | 'adjustment' | 'donation'
+type MovementType = 'all' | 'in' | 'out' | 'adjustment' | 'donation' | 'conversion'
 
 export function StockHistory() {
   const [filter, setFilter] = useState<MovementType>('all')
@@ -49,10 +49,11 @@ export function StockHistory() {
     if (filter === 'out') return movement.type === 'out'
     if (filter === 'adjustment') return movement.type === 'adjustment'
     if (filter === 'donation') return movement.type === 'donation'
+    if (filter === 'conversion') return movement.type === 'conversion'
     return true
   }).slice(0, limit)
 
-  const getMovementBadge = (type: string, quantity: number) => {
+  const getMovementBadge = (type: string, quantity: number, isOutflow?: boolean) => {
     switch (type) {
       case 'in':
         return (
@@ -78,6 +79,12 @@ export function StockHistory() {
             -{quantity} Don
           </Badge>
         )
+      case 'conversion':
+        return (
+          <Badge className="bg-locagri-primary text-[10px] sm:text-xs">
+            {isOutflow ? '-' : '+'}{quantity} Conversion
+          </Badge>
+        )
       default:
         return <Badge variant="outline" className="text-[10px] sm:text-xs">{type}</Badge>
     }
@@ -93,6 +100,8 @@ export function StockHistory() {
         return <ClipboardEdit className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-accent" />
       case 'donation':
         return <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-accent" />
+      case 'conversion':
+        return <Repeat className="w-4 h-4 sm:w-5 sm:h-5 text-locagri-primary" />
       default:
         return <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-slate-500" />
     }
@@ -156,6 +165,7 @@ export function StockHistory() {
                 <SelectItem value="out">Sorties/Ventes</SelectItem>
                 <SelectItem value="adjustment">Ajustements</SelectItem>
                 <SelectItem value="donation">Dons</SelectItem>
+                <SelectItem value="conversion">Conversions</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -182,7 +192,7 @@ export function StockHistory() {
                 {/* Détails */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                    {getMovementBadge(movement.type, movement.quantity)}
+                    {getMovementBadge(movement.type, movement.quantity, movement.newStock < movement.previousStock)}
                     <span className="text-[10px] sm:text-xs text-muted-foreground">
                       {formatDate(movement.date)} à {formatTime(movement.date)}
                     </span>
@@ -209,6 +219,7 @@ export function StockHistory() {
               if (filter === 'out') return m.type === 'out'
               if (filter === 'adjustment') return m.type === 'adjustment'
               if (filter === 'donation') return m.type === 'donation'
+              if (filter === 'conversion') return m.type === 'conversion'
               return true
             }).length && (
               <Button

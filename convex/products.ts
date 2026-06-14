@@ -133,6 +133,9 @@ export const addProduct = mutation({
     stockQuantity: v.number(),
     alertThreshold: v.number(),
     unit: v.string(),
+    // Déconditionnement : produit issu de la conversion d'un autre produit
+    parentProductId: v.optional(v.id("products")),
+    conversionRatio: v.optional(v.number()),
   },
   returns: v.object({
     productId: v.id("products"),
@@ -171,6 +174,26 @@ export const addProduct = mutation({
       throw new Error("L'unité de mesure est requise");
     }
 
+    // Lien de déconditionnement (optionnel) : parent + ratio cohérents
+    if (args.parentProductId !== undefined) {
+      const parent = await ctx.db.get(args.parentProductId);
+      if (!parent) {
+        throw new Error("Produit source (parent) introuvable");
+      }
+      if (parent.isActive === false) {
+        throw new Error("Le produit source (parent) est archivé");
+      }
+      if (
+        args.conversionRatio === undefined ||
+        !Number.isInteger(args.conversionRatio) ||
+        args.conversionRatio <= 0
+      ) {
+        throw new Error("Le ratio de conversion doit être un entier supérieur à 0");
+      }
+    } else if (args.conversionRatio !== undefined) {
+      throw new Error("Un ratio de conversion nécessite un produit source");
+    }
+
     // Générer la référence produit
     const productReference: string = await ctx.runMutation(internal.references.getNextReference, {
       type: "product",
@@ -185,6 +208,8 @@ export const addProduct = mutation({
       stockQuantity: args.stockQuantity,
       alertThreshold: args.alertThreshold,
       unit: args.unit.trim(),
+      parentProductId: args.parentProductId,
+      conversionRatio: args.parentProductId !== undefined ? args.conversionRatio : undefined,
       isActive: true,
       createdAt: now,
       updatedAt: now,
@@ -315,6 +340,9 @@ export const updateProduct = mutation({
     price: v.number(),
     alertThreshold: v.number(),
     unit: v.string(),
+    // Déconditionnement : produit issu de la conversion d'un autre produit
+    parentProductId: v.optional(v.id("products")),
+    conversionRatio: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -347,12 +375,38 @@ export const updateProduct = mutation({
       throw new Error("Le seuil d'alerte ne peut pas être négatif");
     }
 
+    // Lien de déconditionnement (optionnel)
+    if (args.parentProductId !== undefined) {
+      if (args.parentProductId === args.productId) {
+        throw new Error("Un produit ne peut pas être issu de lui-même");
+      }
+      const parent = await ctx.db.get(args.parentProductId);
+      if (!parent) {
+        throw new Error("Produit source (parent) introuvable");
+      }
+      if (parent.isActive === false) {
+        throw new Error("Le produit source (parent) est archivé");
+      }
+      if (
+        args.conversionRatio === undefined ||
+        !Number.isInteger(args.conversionRatio) ||
+        args.conversionRatio <= 0
+      ) {
+        throw new Error("Le ratio de conversion doit être un entier supérieur à 0");
+      }
+    } else if (args.conversionRatio !== undefined) {
+      throw new Error("Un ratio de conversion nécessite un produit source");
+    }
+
     await ctx.db.patch(args.productId, {
       name: args.name.trim(),
       description: args.description?.trim(),
       price: args.price,
       alertThreshold: args.alertThreshold,
       unit: args.unit.trim(),
+      // undefined efface le champ (lien retiré si la case est décochée)
+      parentProductId: args.parentProductId,
+      conversionRatio: args.parentProductId !== undefined ? args.conversionRatio : undefined,
       updatedAt: Date.now(),
     });
 

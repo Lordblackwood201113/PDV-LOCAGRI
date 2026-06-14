@@ -19,7 +19,8 @@ export const getStockHistory = query({
         v.literal("in"),
         v.literal("out"),
         v.literal("adjustment"),
-        v.literal("donation")
+        v.literal("donation"),
+        v.literal("conversion")
       )
     ),
     startDate: v.optional(v.number()),
