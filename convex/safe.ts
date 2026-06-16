@@ -22,8 +22,8 @@ export const getSafeStatus = query({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .unique();
 
-    // Seuls admin et manager peuvent voir le coffre avec les détails
-    if (!user || (user.role !== "admin" && user.role !== "manager")) {
+    // Seul l'admin a accès au coffre (le manager n'y a pas accès)
+    if (!user || user.role !== "admin") {
       return null;
     }
 
@@ -76,7 +76,7 @@ export const getTransactionHistory = query({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .unique();
 
-    if (!user || (user.role !== "admin" && user.role !== "manager")) {
+    if (!user || user.role !== "admin") {
       return [];
     }
 
@@ -127,7 +127,7 @@ export const getPendingFundRequests = query({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .unique();
 
-    if (!user || (user.role !== "admin" && user.role !== "manager")) {
+    if (!user || user.role !== "admin") {
       return [];
     }
 
@@ -157,7 +157,7 @@ export const getPendingFundRequestsCount = query({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .unique();
 
-    if (!user || (user.role !== "admin" && user.role !== "manager")) {
+    if (!user || user.role !== "admin") {
       return 0;
     }
 
@@ -186,7 +186,7 @@ export const getPendingDeposits = query({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .unique();
 
-    if (!user || (user.role !== "admin" && user.role !== "manager")) {
+    if (!user || user.role !== "admin") {
       return [];
     }
 
@@ -216,7 +216,7 @@ export const getPendingDepositsCount = query({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .unique();
 
-    if (!user || (user.role !== "admin" && user.role !== "manager")) {
+    if (!user || user.role !== "admin") {
       return 0;
     }
 
@@ -595,8 +595,8 @@ export const approveFundRequest = mutation({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .unique();
 
-    if (!user || (user.role !== "admin" && user.role !== "manager")) {
-      throw new Error("Seuls les administrateurs et managers peuvent approuver");
+    if (!user || user.role !== "admin") {
+      throw new Error("Seuls les administrateurs peuvent approuver");
     }
 
     const request = await ctx.db.get(args.requestId);
@@ -723,8 +723,8 @@ export const rejectFundRequest = mutation({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .unique();
 
-    if (!user || (user.role !== "admin" && user.role !== "manager")) {
-      throw new Error("Seuls les administrateurs et managers peuvent rejeter");
+    if (!user || user.role !== "admin") {
+      throw new Error("Seuls les administrateurs peuvent rejeter");
     }
 
     const request = await ctx.db.get(args.requestId);
@@ -858,8 +858,8 @@ export const confirmDeposit = mutation({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .unique();
 
-    if (!user || (user.role !== "admin" && user.role !== "manager")) {
-      throw new Error("Seuls les administrateurs et managers peuvent confirmer un versement");
+    if (!user || user.role !== "admin") {
+      throw new Error("Seuls les administrateurs peuvent confirmer un versement");
     }
 
     const deposit = await ctx.db.get(args.depositId);

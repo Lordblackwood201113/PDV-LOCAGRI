@@ -82,7 +82,8 @@ export function Sidebar({
   const canAccessReports = userRole === 'admin' || userRole === 'manager' || userRole === 'cashier'
   const canAccessAdmin = userRole === 'admin'
   const canAccessAssistant = userRole === 'admin'
-  const canAccessSafe = userRole === 'admin' || userRole === 'manager'
+  // Coffre : admin uniquement (le manager n'a pas accès au coffre)
+  const canAccessSafe = userRole === 'admin'
   // Répertoire clients : accessible à tous (cashier en lecture, manager+ en édition)
   const canAccessClients = userRole === 'admin' || userRole === 'manager' || userRole === 'cashier'
 
