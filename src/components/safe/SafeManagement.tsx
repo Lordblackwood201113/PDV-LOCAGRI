@@ -302,12 +302,12 @@ export function SafeManagement() {
   }
 
   // Access check
-  if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'manager')) {
+  if (!currentUser || currentUser.role !== 'admin') {
     return (
       <div className="flex items-center justify-center min-h-[50vh] p-4">
         <div className="text-center">
           <Vault className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p className="text-gray-500">Accès réservé aux administrateurs et managers</p>
+          <p className="text-gray-500">Accès réservé aux administrateurs</p>
         </div>
       </div>
     )

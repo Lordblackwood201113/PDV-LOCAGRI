@@ -104,14 +104,14 @@ export function CashSessionProvider({ children, requireSession = true }: CashSes
     : null
 
   // Workflow de demande de fond (coffre actif) :
-  // - Uniquement pour les caissiers (admin/manager saisissent directement leur fond)
-  // - Seulement si pas de session et pas déjà clôturée
-  // - Seulement si requireSession=true
-  const showFundRequestWorkflow = safeIsActive && needsToOpenSession && !fundApproved && !isSessionClosed && !isPrivilegedUser && requireSession
+  // - Pour TOUS les rôles (caissier, manager ET admin) : ouvrir une caisse passe
+  //   obligatoirement par une demande de fond validée par un administrateur, qui débite
+  //   le coffre. L'admin valide sa propre demande ; aucune ouverture directe sans validation.
+  // - Seulement si pas de session, pas déjà clôturée, et requireSession=true.
+  const showFundRequestWorkflow = safeIsActive && needsToOpenSession && !fundApproved && !isSessionClosed && requireSession
 
-  // Modal d'ouverture standard :
-  // - S'affiche si pas de session ouverte (admin, manager et caissier confondus)
-  // - Sauf si le workflow de demande de fond est en cours pour le caissier
+  // Modal d'ouverture standard (déploiement SANS coffre uniquement) :
+  // - S'affiche si pas de session ouverte et qu'aucun workflow de demande de fond n'est actif.
   const shouldShowOpenModal = needsToOpenSession && !showFundRequestWorkflow && requireSession
 
   // Le contenu est visible si :
@@ -128,7 +128,7 @@ export function CashSessionProvider({ children, requireSession = true }: CashSes
         openCloseModal,
       }}
     >
-      {/* Workflow de demande de fond de caisse (si coffre actif) - seulement pour les caissiers */}
+      {/* Workflow de demande de fond de caisse (si coffre actif) - tous les rôles */}
       {showFundRequestWorkflow && (
         <div className="flex items-center justify-center min-h-screen p-6 bg-gray-50">
           <div className="w-full max-w-md space-y-4">
@@ -138,7 +138,7 @@ export function CashSessionProvider({ children, requireSession = true }: CashSes
         </div>
       )}
 
-      {/* Modal d'ouverture standard (seulement pour les caissiers) */}
+      {/* Modal d'ouverture standard (déploiement sans coffre uniquement) */}
       {shouldShowOpenModal && (
         <OpenSessionModal
           open={needsToOpenSession}
