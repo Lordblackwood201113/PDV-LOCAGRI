@@ -557,51 +557,46 @@ export const reopenSession = mutation({
     const safe = await ctx.db.query("safe").first();
 
     if (safe) {
-      // Chercher le versement en attente pour cette session
+      // Une caisse clôturée signifie que l'argent (fond + recette) est rendu au coffre :
+      // reprendre le travail exige un NOUVEAU fond validé par l'admin (qui redébite le coffre).
+
+      // 1) Tant que le versement de cette caisse n'est pas confirmé, on bloque la réouverture,
+      //    pour que la recette soit créditée au coffre AVANT qu'un nouveau fond n'en sorte.
       const pendingDeposit = await ctx.db
         .query("pendingDeposits")
         .withIndex("by_status", (q) => q.eq("status", "pending"))
         .filter((q) => q.eq(q.field("sessionId"), session._id))
         .first();
 
-      // Chercher si un versement a déjà été confirmé
-      const depositedDeposit = await ctx.db
-        .query("pendingDeposits")
-        .filter((q) =>
-          q.and(
-            q.eq(q.field("sessionId"), session._id),
-            q.eq(q.field("status"), "deposited")
-          )
-        )
-        .first();
-
-      // Supprimer le versement en attente s'il existe
       if (pendingDeposit) {
-        await ctx.db.delete(pendingDeposit._id);
+        throw new Error(
+          "Le versement de cette caisse doit d'abord être confirmé par un responsable avant de pouvoir la rouvrir."
+        );
       }
 
-      // Si le versement a été confirmé, on supprime la session pour permettre d'en créer une nouvelle
-      // Le caissier devra redemander un fond de caisse
-      if (depositedDeposit) {
-        await ctx.db.delete(session._id);
-        await writeAuditLog(ctx, {
-          actor: reopenActorInfo,
-          action: "session.reopened",
-          category: "session",
-          summary: `Réouverture de caisse après versement confirmé — session ${session.date} supprimée, nouveau fond requis`,
-          targetType: "cashSession",
-          targetId: session._id,
-        });
-        return {
-          sessionId: null,
-          reopenedAt: now,
-          needsNewFundRequest: true, // Le caissier doit demander un nouveau fond
-          message: "Session supprimée. Vous pouvez demander un nouveau fond de caisse.",
-        };
-      }
+      // 2) Versement confirmé (ou aucun) : on clôt définitivement la session et on route
+      //    l'utilisateur vers une nouvelle demande de fond (caissier) / ouverture directe
+      //    (admin-manager) — débit du coffre dans les deux cas. On ne supprime jamais un
+      //    versement : un versement confirmé reste un historique.
+      await ctx.db.delete(session._id);
+      await writeAuditLog(ctx, {
+        actor: reopenActorInfo,
+        action: "session.reopened",
+        category: "session",
+        summary: `Réouverture de caisse — session ${session.date} clôturée, nouveau fond requis`,
+        targetType: "cashSession",
+        targetId: session._id,
+      });
+      return {
+        sessionId: null,
+        reopenedAt: now,
+        needsNewFundRequest: true, // Le caissier doit demander un nouveau fond
+        message: "Demandez un nouveau fond de caisse pour reprendre.",
+      };
     }
 
-    // Rouvrir la session en conservant le montant d'ouverture original
+    // Sans coffre : pas de notion de fond à valider — on rouvre l'ancienne session telle quelle,
+    // en conservant le montant d'ouverture original.
     await ctx.db.patch(session._id, {
       status: "open",
       closingAmount: undefined,

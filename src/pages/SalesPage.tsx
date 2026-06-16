@@ -178,6 +178,10 @@ function ClosedSessionSummary({ session }: ClosedSessionSummaryProps) {
     sessionId: session._id as Id<'cashSessions'>
   })
   const reopenSession = useMutation(api.cashSessions.reopenSession)
+  const myPendingDeposit = useQuery(api.safe.getMyPendingDeposit)
+  // Tant que le versement de cette caisse n'est pas confirmé par un responsable,
+  // la réouverture est bloquée (l'argent doit d'abord rentrer au coffre).
+  const depositPending = !!myPendingDeposit
 
   const handleReopenSession = async () => {
     setIsReopening(true)
@@ -225,13 +229,19 @@ function ClosedSessionSummary({ session }: ClosedSessionSummaryProps) {
         {/* Bouton de réouverture */}
         <Button
           onClick={handleReopenSession}
-          disabled={isReopening}
+          disabled={isReopening || depositPending}
           variant="outline"
           className="mt-4 border-locagri-primary text-locagri-primary hover:bg-locagri-primary/10 text-sm"
         >
           <RotateCcw className={`w-4 h-4 mr-2 ${isReopening ? 'animate-spin' : ''}`} />
           {isReopening ? 'Réouverture...' : 'Rouvrir la caisse'}
         </Button>
+        {depositPending && (
+          <p className="mt-2 text-xs sm:text-sm text-gray-500 flex items-center justify-center gap-1.5">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            En attente de confirmation du versement par un responsable
+          </p>
+        )}
       </div>
 
       {/* Timing */}
