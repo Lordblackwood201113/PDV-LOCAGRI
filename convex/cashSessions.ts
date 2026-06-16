@@ -336,6 +336,14 @@ export const openSession = mutation({
 
     const now = Date.now();
 
+    // Le fond de caisse provient physiquement du coffre : si un coffre est initialisé,
+    // l'ouverture le débite (symétrie avec approveFundRequest / confirmDeposit).
+    // Sans coffre, le comportement reste strictement inchangé.
+    const safe = await ctx.db.query("safe").first();
+    if (safe && args.openingAmount > safe.currentBalance) {
+      throw new Error("Le fond dépasse le solde du coffre");
+    }
+
     // Créer la session
     const sessionId = await ctx.db.insert("cashSessions", {
       userId: identity.subject,
@@ -345,6 +353,31 @@ export const openSession = mutation({
       openedAt: now,
       status: "open",
     });
+
+    // Débiter le coffre du fond remis (retrait tracé), dans la même mutation transactionnelle
+    let newSafeBalance: number | undefined;
+    if (safe) {
+      newSafeBalance = safe.currentBalance - args.openingAmount;
+      await ctx.db.patch(safe._id, {
+        currentBalance: newSafeBalance,
+        lastUpdated: now,
+        updatedBy: identity.subject,
+        updatedByName: user.name,
+      });
+      await ctx.db.insert("safeTransactions", {
+        type: "withdrawal",
+        amount: args.openingAmount,
+        previousBalance: safe.currentBalance,
+        newBalance: newSafeBalance,
+        performedById: identity.subject,
+        performedByName: user.name,
+        relatedUserId: identity.subject,
+        relatedUserName: user.name,
+        relatedSessionId: sessionId,
+        reason: `Fond de caisse (ouverture directe) — ${user.name}`,
+        date: now,
+      });
+    }
 
     await writeAuditLog(ctx, {
       actor: { id: identity.subject, name: user.name, role: user.role },
@@ -360,6 +393,7 @@ export const openSession = mutation({
       sessionId,
       openingAmount: args.openingAmount,
       openedAt: now,
+      newSafeBalance,
     };
   },
 });

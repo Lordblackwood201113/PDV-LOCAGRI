@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import {
   Dialog,
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Wallet, CheckCircle } from 'lucide-react'
+import { Wallet, CheckCircle, AlertTriangle } from 'lucide-react'
 
 interface OpenSessionModalProps {
   open: boolean
@@ -26,6 +26,13 @@ export function OpenSessionModal({ open, onSuccess, prefilledAmount, fundRequest
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const openSession = useMutation(api.cashSessions.openSession)
+  const safeStatus = useQuery(api.safe.getSafeStatus)
+
+  // Le fond est retiré du coffre : on bloque la saisie si elle dépasse le solde disponible.
+  // getSafeStatus renvoie null si pas de coffre ou pour un caissier → aucun blocage (AC3).
+  const parsedOpening = parseInt(openingAmount)
+  const exceedsSafe =
+    safeStatus != null && !Number.isNaN(parsedOpening) && parsedOpening > safeStatus.currentBalance
 
   // Pré-remplir avec le montant approuvé si disponible
   useEffect(() => {
@@ -45,6 +52,11 @@ export function OpenSessionModal({ open, onSuccess, prefilledAmount, fundRequest
 
     if (isNaN(amount) || amount < 0) {
       toast.error('Veuillez entrer un montant valide')
+      return
+    }
+
+    if (exceedsSafe) {
+      toast.error('Le fond dépasse le solde du coffre')
       return
     }
 
@@ -82,7 +94,9 @@ export function OpenSessionModal({ open, onSuccess, prefilledAmount, fundRequest
           <DialogDescription className="text-xs sm:text-sm">
             {fundRequestApproved
               ? 'Votre demande de fond a été approuvée. Confirmez le montant reçu.'
-              : 'Comptez et déclarez le montant en espèces présent dans la caisse avant de commencer.'
+              : safeStatus != null
+                ? 'Déclarez le fond de caisse. Ce montant sera retiré du coffre.'
+                : 'Comptez et déclarez le montant en espèces présent dans la caisse avant de commencer.'
             }
           </DialogDescription>
         </DialogHeader>
@@ -147,11 +161,26 @@ export function OpenSessionModal({ open, onSuccess, prefilledAmount, fundRequest
             </div>
           )}
 
+          {/* Solde du coffre — le fond en est retiré (admin/manager, coffre actif) */}
+          {safeStatus != null && (
+            exceedsSafe ? (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>Le fond dépasse le solde du coffre ({formatPrice(safeStatus.currentBalance)})</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 text-xs sm:text-sm text-muted-foreground">
+                <span>Solde du coffre disponible</span>
+                <span className="font-medium text-foreground">{formatPrice(safeStatus.currentBalance)}</span>
+              </div>
+            )
+          )}
+
           {/* Bouton de validation */}
           <Button
             type="submit"
             className="w-full h-10 sm:h-12 text-sm sm:text-lg"
-            disabled={isSubmitting || openingAmount === ''}
+            disabled={isSubmitting || openingAmount === '' || exceedsSafe}
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">
